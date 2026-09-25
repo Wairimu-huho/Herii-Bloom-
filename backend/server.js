@@ -6,6 +6,9 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const boxRoutes = require("./routes/boxRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
+const articleRoutes = require("./routes/articleRoutes");
+const postRoutes = require("./routes/postRoutes");
+const commentRoutes = require("./routes/commentRoutes");
 
 connectDB();
 
@@ -19,6 +22,9 @@ app.get("/", (req, res) => res.send("Heri Bloom API is running"));
 app.use("/api/auth", authRoutes);
 app.use("/api/boxes", boxRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/articles", articleRoutes);
+app.use("/api/posts", postRoutes);
+app.use("/api/comments", commentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
