@@ -1,4 +1,5 @@
-const Filter = require("bad-words");
+const badWords = require("bad-words");
+const Filter = badWords.Filter || badWords;
 const filter = new Filter();
 
 // How many reports before something auto-hides pending admin review.
