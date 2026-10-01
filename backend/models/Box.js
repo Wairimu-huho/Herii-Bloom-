@@ -8,6 +8,13 @@ const boxSchema = new mongoose.Schema(
     price: { type: Number, required: true }, // monthly price in KSh
     mostPopular: { type: Boolean, default: false },
     items: [{ type: String }], // ["Menstrual cup", "Organic pads (variety)", ...]
+    // Which product categories a subscriber gets to choose for this box.
+    // Both current tiers offer all five, but this stays editable per box.
+    categories: {
+      type: [String],
+      enum: ["pads", "tampons", "chocolate", "tea", "candle"],
+      default: ["pads", "tampons", "chocolate", "tea", "candle"],
+    },
     image: { type: String }, // asset URL once uploaded
     active: { type: Boolean, default: true }, // lets you retire a tier without deleting history
   },

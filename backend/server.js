@@ -9,6 +9,7 @@ const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const articleRoutes = require("./routes/articleRoutes");
 const postRoutes = require("./routes/postRoutes");
 const commentRoutes = require("./routes/commentRoutes");
+const productRoutes = require("./routes/productRoutes");
 
 connectDB();
 
@@ -25,6 +26,7 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/comments", commentRoutes);
+app.use("/api/products", productRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
