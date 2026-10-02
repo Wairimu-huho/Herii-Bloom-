@@ -13,7 +13,7 @@ const subscriptionSchema = new mongoose.Schema(
       {
         category: {
           type: String,
-          enum: ["pads", "tampons", "chocolate", "tea", "candle"],
+          enum: ["pads", "tampons", "chocolate", "tea", "candle", "addon"],
           required: true,
         },
         product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },

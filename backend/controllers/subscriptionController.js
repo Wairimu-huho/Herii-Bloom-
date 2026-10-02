@@ -1,7 +1,7 @@
 const Subscription = require("../models/Subscription");
 const Box = require("../models/Box");
 const Product = require("../models/Product");
-const { SELECTION_RULES } = require("../utils/selectionRules");
+const { SELECTION_RULES, REQUIRE_AT_LEAST_ONE_OF } = require("../utils/selectionRules");
 
 // @route POST /api/subscriptions  (logged-in user subscribes to a box)
 // Body: { boxId, deliveryAddress, selections: [{ category, productId, quantity }] }
@@ -14,10 +14,8 @@ const createSubscription = async (req, res) => {
       return res.status(404).json({ message: "Box not found" });
     }
 
-    // Only validate categories this box actually offers.
     const requiredCategories = box.categories;
 
-    // Group submitted selections by category so we can check quantities per rule.
     const byCategory = {};
     for (const sel of selections) {
       if (!byCategory[sel.category]) byCategory[sel.category] = [];
@@ -29,9 +27,10 @@ const createSubscription = async (req, res) => {
       const entries = byCategory[category] || [];
       const totalQty = entries.reduce((sum, e) => sum + (e.quantity || 1), 0);
 
-      if (totalQty !== rule.exact) {
+      if (totalQty < rule.min || (rule.max !== null && totalQty > rule.max)) {
+        const bound = rule.max === null ? `at least ${rule.min}` : `between ${rule.min} and ${rule.max}`;
         return res.status(400).json({
-          message: `${category} requires exactly ${rule.exact} selection(s), got ${totalQty}`,
+          message: `${category} requires ${bound} selection(s), got ${totalQty}`,
         });
       }
 
@@ -42,17 +41,30 @@ const createSubscription = async (req, res) => {
             message: `${category} does not allow choosing the same product more than once`,
           });
         }
+        if (entries.some((e) => (e.quantity || 1) !== 1)) {
+          return res.status(400).json({
+            message: `${category} does not support custom quantities, each item is picked once`,
+          });
+        }
       }
     }
 
-    // Reject categories submitted that this box doesn't even offer.
+    const pairOffered = REQUIRE_AT_LEAST_ONE_OF.filter((c) => requiredCategories.includes(c));
+    if (pairOffered.length > 0) {
+      const pairTotal = pairOffered.reduce((sum, c) => sum + (byCategory[c] || []).length, 0);
+      if (pairTotal < 1) {
+        return res.status(400).json({
+          message: `Please choose at least one of: ${pairOffered.join(" or ")}`,
+        });
+      }
+    }
+
     for (const category of Object.keys(byCategory)) {
       if (!requiredCategories.includes(category)) {
         return res.status(400).json({ message: `This box does not offer ${category}` });
       }
     }
 
-    // Validate every referenced product actually exists, is active, and matches its stated category.
     const productIds = selections.map((s) => s.productId);
     const products = await Product.find({ _id: { $in: productIds }, active: true });
     const productMap = Object.fromEntries(products.map((p) => [p._id.toString(), p]));
@@ -86,7 +98,7 @@ const createSubscription = async (req, res) => {
       selections: resolvedSelections,
       productsTotal,
       totalPrice,
-      status: "pending", // flips to "active" once payment is wired up
+      status: "pending",
     });
 
     res.status(201).json(subscription);
@@ -95,7 +107,7 @@ const createSubscription = async (req, res) => {
   }
 };
 
-// @route GET /api/subscriptions/me  (a subscriber checking their own status)
+// @route GET /api/subscriptions/me
 const getMySubscriptions = async (req, res) => {
   try {
     const subs = await Subscription.find({ user: req.user._id })
@@ -107,7 +119,7 @@ const getMySubscriptions = async (req, res) => {
   }
 };
 
-// @route GET /api/subscriptions  (admin only — this IS your tracking sheet)
+// @route GET /api/subscriptions  (admin only)
 const getAllSubscriptions = async (req, res) => {
   try {
     const subs = await Subscription.find()
@@ -121,7 +133,7 @@ const getAllSubscriptions = async (req, res) => {
   }
 };
 
-// @route PUT /api/subscriptions/:id  (admin updates status, e.g. mark as paid/active)
+// @route PUT /api/subscriptions/:id  (admin only)
 const updateSubscription = async (req, res) => {
   try {
     const sub = await Subscription.findByIdAndUpdate(req.params.id, req.body, { new: true });

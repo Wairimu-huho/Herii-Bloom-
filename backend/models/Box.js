@@ -12,8 +12,8 @@ const boxSchema = new mongoose.Schema(
     // Both current tiers offer all five, but this stays editable per box.
     categories: {
       type: [String],
-      enum: ["pads", "tampons", "chocolate", "tea", "candle"],
-      default: ["pads", "tampons", "chocolate", "tea", "candle"],
+      enum: ["pads", "tampons", "chocolate", "tea", "candle", "addon"],
+      default: ["pads", "tampons", "chocolate", "tea", "candle", "addon"],
     },
     image: { type: String }, // asset URL once uploaded
     active: { type: Boolean, default: true }, // lets you retire a tier without deleting history
