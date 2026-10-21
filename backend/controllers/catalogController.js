@@ -12,7 +12,7 @@ const DEFAULT_CATEGORIES = [
   { key: "candle", name: "Candles", minSelections: 1, maxSelections: 1, allowRepeat: false, optionalExtra: false, hasOptions: true },
   { key: "bath-bombs", name: "Bath bombs", minSelections: 0, maxSelections: 1, allowRepeat: false, optionalExtra: true, hasOptions: true },
   { key: "essential-oils", name: "Essential oils", minSelections: 0, maxSelections: 1, allowRepeat: false, optionalExtra: true, hasOptions: true },
-  { key: "addon", name: "Add-ons", minSelections: 0, maxSelections: null, allowRepeat: false, optionalExtra: true, hasOptions: true },
+  { key: "addon", name: "Add-ons", minSelections: 0, maxSelections: null, allowRepeat: true, optionalExtra: true, hasOptions: true },
 ];
 
 const getCategories = async (req, res) => {

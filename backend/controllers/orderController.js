@@ -55,7 +55,7 @@ async function validateAndPrice({ box, selections, purchaseType, firstDeliveryDa
     if (!keys.some((key) => (byCategory[key] || []).length)) throw new Error(`Please choose at least one option from: ${keys.join(" or ")}`);
   }
 
-  const products = await Product.find({ _id: { $in: selections.map((s) => s.productId) }, active: true, archived: false, inStock: true });
+  const products = await Product.find({ _id: { $in: selections.map((s) => s.productId) }, active: true, archived: false, inStock: true }).select("name category priceModifier inventory");
   const productMap = Object.fromEntries(products.map((p) => [String(p._id), p]));
   let productsTotal = 0;
   const snapshots = selections.map((selection) => {
@@ -73,13 +73,20 @@ async function validateAndPrice({ box, selections, purchaseType, firstDeliveryDa
     };
   });
   const automaticCategories = categories.filter((category) => category.includedAutomatically);
+  let automaticProducts = [];
   if (automaticCategories.length) {
-    const automaticProducts = await Product.find({ category: { $in: automaticCategories.map((category) => category.key) }, active: true, archived: false, inStock: true });
+    automaticProducts = await Product.find({ category: { $in: automaticCategories.map((category) => category.key) }, active: true, archived: false, inStock: true }).select("name category priceModifier inventory");
     automaticProducts.forEach((product) => {
       productsTotal += product.priceModifier;
       snapshots.push({ category: product.category, product: product._id, productName: product.name, unitPriceModifier: product.priceModifier, quantity: 1 });
     });
   }
+  const inventoryProducts = new Map([...products, ...automaticProducts].map((product) => [String(product._id), product]));
+  const requestedQuantities = snapshots.reduce((all, snapshot) => { all[String(snapshot.product)] = (all[String(snapshot.product)] || 0) + snapshot.quantity; return all; }, {});
+  Object.entries(requestedQuantities).forEach(([productId, quantity]) => {
+    const product = inventoryProducts.get(productId);
+    if (product?.inventory !== null && product?.inventory !== undefined && quantity > product.inventory) throw new Error(`${product.name} only has ${product.inventory} available`);
+  });
   const settings = await getStoreSettings();
   const count = purchaseType === "three_month" ? 3 : 1;
   const discountPercent = purchaseType === "three_month" ? settings.discountPercent : 0;
@@ -142,6 +149,10 @@ const createOrder = async (req, res) => {
       cancellationAccepted: Boolean(cancellationAccepted),
       deliveries: priced.deliveries,
     });
+    for (const [productId, quantity] of Object.entries(priced.snapshots.reduce((all, snapshot) => { all[String(snapshot.product)] = (all[String(snapshot.product)] || 0) + snapshot.quantity; return all; }, {}))) {
+      await Product.updateOne({ _id: productId, inventory: { $ne: null } }, { $inc: { inventory: -quantity } });
+      await Product.updateOne({ _id: productId, inventory: 0 }, { $set: { inStock: false } });
+    }
     res.status(201).json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });

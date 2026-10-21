@@ -8,6 +8,7 @@ async function syncCatalog() {
     { $set: { inStock: true, archived: false, hasOptions: true } }
   );
   await Promise.all(DEFAULT_CATEGORIES.map((category) => Category.updateOne({ key: category.key }, { $setOnInsert: category }, { upsert: true })));
+  await Category.updateOne({ key: "addon", allowRepeat: false }, { $set: { allowRepeat: true } });
   console.log("Catalog synchronized");
 }
 

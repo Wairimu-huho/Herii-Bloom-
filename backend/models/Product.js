@@ -15,6 +15,7 @@ const productSchema = new mongoose.Schema(
     active: { type: Boolean, default: true },
     archived: { type: Boolean, default: false },
     inStock: { type: Boolean, default: true },
+    inventory: { type: Number, min: 0, default: null },
   },
   { timestamps: true }
 );
