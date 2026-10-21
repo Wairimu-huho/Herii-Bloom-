@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  /* Backgrounds */
+  --color-blush: #fdf0f3;
+  --color-blush-deep: #fce8ee;
+  --color-cream: #fff9fb;
+
+  /* Brand accent */
+  --color-brand: #e91e78;
+  --color-brand-dark: #bf1c67;
+  --color-brand-light: #f472b6;
+
+  /* Text */
+  --color-ink: #4b0d32;
+  --color-ink-soft: #5c3c55;
+
+  /* Borders / dividers */
+  --color-hairline: #f2c9d8;
+
+  /* Typography */
+  --font-display: "Playfair Display", serif;
+  --font-body: "Poppins", sans-serif;
+  --font-script: "Allura", cursive;
+}
+
+body {
+  background-color: var(--color-blush);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+/* Hero photo fades into the page color on its left edge (desktop only) */
+@media (min-width: 48rem) {
+  .hero-fade {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 28%);
+    mask-image: linear-gradient(to right, transparent 0%, black 28%);
+  }
+}
