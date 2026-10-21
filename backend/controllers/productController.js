@@ -4,7 +4,7 @@ const Product = require("../models/Product");
 const getProducts = async (req, res) => {
   try {
     const { category } = req.query;
-    const filter = { active: true };
+    const filter = { active: true, archived: { $ne: true }, inStock: true };
     if (category) filter.category = category;
 
     const products = await Product.find(filter).sort({ category: 1, name: 1 });
@@ -38,9 +38,9 @@ const updateProduct = async (req, res) => {
 // @route DELETE /api/products/:id  (admin only)
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findByIdAndUpdate(req.params.id, { active: false, archived: true }, { new: true });
     if (!product) return res.status(404).json({ message: "Product not found" });
-    res.json({ message: "Product deleted" });
+    res.json({ message: "Product archived", product });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -1,16 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const {
-  createSubscription,
-  getMySubscriptions,
-  getAllSubscriptions,
-  updateSubscription,
-} = require("../controllers/subscriptionController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
+const { createOrder, getMyOrders, getAllOrders } = require("../controllers/orderController");
 
-router.post("/", protect, createSubscription);
-router.get("/me", protect, getMySubscriptions);
-router.get("/", protect, adminOnly, getAllSubscriptions); // this list = your tracking sheet
-router.put("/:id", protect, adminOnly, updateSubscription);
+// Compatibility aliases: the data model is now an order, even when the old URL is used.
+router.post("/", protect, createOrder);
+router.get("/me", protect, getMyOrders);
+router.get("/", protect, adminOnly, getAllOrders);
 
 module.exports = router;

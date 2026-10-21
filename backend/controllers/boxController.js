@@ -1,10 +1,17 @@
 const Box = require("../models/Box");
+const Product = require("../models/Product");
+const { resolveBoxCategories } = require("../utils/catalog");
 
 // @route GET /api/boxes
 const getBoxes = async (req, res) => {
   try {
-    const boxes = await Box.find({ active: true });
-    res.json(boxes);
+    const boxes = await Box.find({ active: true }).lean();
+    const result = await Promise.all(boxes.map(async (box) => {
+      const categories = await resolveBoxCategories(box);
+      const products = await Product.find({ category: { $in: categories.map((c) => c.key) }, active: true, archived: { $ne: true }, inStock: true }).select("name category").lean();
+      return { ...box, categoryDefinitions: categories, items: products.map((product) => product.name) };
+    }));
+    res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
