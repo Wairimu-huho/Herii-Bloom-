@@ -9,6 +9,8 @@ const categorySchema = new mongoose.Schema(
     maxSelections: { type: Number, default: 1, min: 0 },
     allowRepeat: { type: Boolean, default: false },
     optionalExtra: { type: Boolean, default: false },
+    hasOptions: { type: Boolean, default: true },
+    includedAutomatically: { type: Boolean, default: false },
     atLeastOneGroup: { type: String, trim: true },
     active: { type: Boolean, default: true },
   },

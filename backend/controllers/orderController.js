@@ -72,6 +72,14 @@ async function validateAndPrice({ box, selections, purchaseType, firstDeliveryDa
       quantity,
     };
   });
+  const automaticCategories = categories.filter((category) => category.includedAutomatically);
+  if (automaticCategories.length) {
+    const automaticProducts = await Product.find({ category: { $in: automaticCategories.map((category) => category.key) }, active: true, archived: false, inStock: true });
+    automaticProducts.forEach((product) => {
+      productsTotal += product.priceModifier;
+      snapshots.push({ category: product.category, product: product._id, productName: product.name, unitPriceModifier: product.priceModifier, quantity: 1 });
+    });
+  }
   const settings = await getStoreSettings();
   const count = purchaseType === "three_month" ? 3 : 1;
   const discountPercent = purchaseType === "three_month" ? settings.discountPercent : 0;

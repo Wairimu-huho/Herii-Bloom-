@@ -3,6 +3,8 @@ const Product = require("../models/Product");
 // Public shop catalog: only active, non-archived, in-stock products.
 const getProducts = async (req, res) => {
   try {
+    await Product.updateMany({ inStock: { $exists: false } }, { $set: { inStock: true } });
+    await Product.updateMany({ archived: { $exists: false } }, { $set: { archived: false } });
     const { category } = req.query;
     const filter = { active: true, archived: { $ne: true }, inStock: true };
     if (category) filter.category = category;
@@ -16,6 +18,9 @@ const getProducts = async (req, res) => {
 // Admin catalog: includes out-of-stock, inactive, and archived products.
 const getAllProducts = async (req, res) => {
   try {
+    await Product.updateMany({ inStock: { $exists: false } }, { $set: { inStock: true } });
+    await Product.updateMany({ archived: { $exists: false } }, { $set: { archived: false } });
+    await Product.updateMany({ hasOptions: { $exists: false } }, { $set: { hasOptions: true } });
     const products = await Product.find().sort({ archived: 1, category: 1, name: 1 });
     res.json(products);
   } catch (error) {
