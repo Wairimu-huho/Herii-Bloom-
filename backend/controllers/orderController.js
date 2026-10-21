@@ -159,6 +159,30 @@ const createOrder = async (req, res) => {
   }
 };
 
+const createStandaloneAddonOrder = async (req, res) => {
+  try {
+    const { productId, quantity = 1, deliveryAddress, phone, firstDeliveryDate } = req.body;
+    const requestedQuantity = Number(quantity);
+    if (!Number.isInteger(requestedQuantity) || requestedQuantity < 1) return res.status(400).json({ message: "Quantity must be at least 1" });
+    if (!phone?.trim()) return res.status(400).json({ message: "Phone number is required" });
+    if (!deliveryAddress?.street?.trim() || !deliveryAddress?.city?.trim()) return res.status(400).json({ message: "Street and city are required" });
+    const product = await Product.findOne({ _id: productId, category: { $in: ["addon", "addons", "add-ons"] }, active: true, archived: false, inStock: true }).select("name category standalonePrice inventory");
+    if (!product || product.standalonePrice === null || product.standalonePrice === undefined) return res.status(400).json({ message: "This add-on is not available as a standalone purchase" });
+    if (product.inventory !== null && product.inventory !== undefined && requestedQuantity > product.inventory) return res.status(400).json({ message: `${product.name} only has ${product.inventory} available` });
+    const settings = await getStoreSettings();
+    const scheduledDate = makeDates(firstDeliveryDate || settings.earliestBookableDate, 1, settings)[0];
+    const start = dateOnly(scheduledDate); const end = new Date(start); end.setDate(end.getDate() + 1);
+    const alreadyBooked = await Order.countDocuments({ status: { $ne: "cancelled" }, "deliveries.scheduledDate": { $gte: start, $lt: end } });
+    if (alreadyBooked >= settings.maxBoxesPerDay) return res.status(400).json({ message: "That delivery date is full. Please choose another date." });
+    const total = product.standalonePrice * requestedQuantity;
+    const selection = { category: product.category, product: product._id, productName: product.name, unitPriceModifier: product.standalonePrice, quantity: requestedQuantity };
+    const order = await Order.create({ user: req.user._id, orderType: "standalone_addon", boxName: `Standalone: ${product.name}`, boxPrice: 0, purchaseType: "one_time", selections: [selection], productsTotal: total, totalPrice: total, deliveryAddress, phone, cancellationAccepted: true, deliveries: [{ sequence: 1, scheduledDate, selections: [selection], boxPrice: 0, productsTotal: total, totalPrice: total }] });
+    await Product.updateOne({ _id: product._id, inventory: { $ne: null } }, { $inc: { inventory: -requestedQuantity } });
+    await Product.updateOne({ _id: product._id, inventory: 0 }, { $set: { inStock: false } });
+    res.status(201).json(order);
+  } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
 const getMyOrders = async (req, res) => res.json(await Order.find({ user: req.user._id }).sort({ createdAt: -1 }));
 const getAllOrders = async (req, res) => res.json(await Order.find().populate("user", "name email phone").sort({ createdAt: -1 }));
 
@@ -197,4 +221,4 @@ const postponeOrder = async (req, res) => {
   res.json(order);
 };
 
-module.exports = { createOrder, getMyOrders, getAllOrders, reorder, cancelOrder, postponeOrder };
+module.exports = { createOrder, createStandaloneAddonOrder, getMyOrders, getAllOrders, reorder, cancelOrder, postponeOrder };

@@ -28,9 +28,10 @@ const deliverySchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    box: { type: mongoose.Schema.Types.ObjectId, ref: "Box", required: true },
-    boxName: { type: String, required: true },
-    boxPrice: { type: Number, required: true },
+    orderType: { type: String, enum: ["box", "standalone_addon"], default: "box" },
+    box: { type: mongoose.Schema.Types.ObjectId, ref: "Box" },
+    boxName: { type: String, default: "Standalone add-on" },
+    boxPrice: { type: Number, default: 0 },
     purchaseType: { type: String, enum: ["one_time", "three_month"], default: "one_time" },
     selections: { type: [selectionSchema], default: [] },
     productsTotal: { type: Number, default: 0 },

@@ -10,6 +10,7 @@ const reviewSchema = new mongoose.Schema({
   order: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
   box: { type: mongoose.Schema.Types.ObjectId, ref: "Box", required: true },
   boxName: { type: String, required: true },
+  reviewType: { type: String, enum: ["box", "products"], default: "box" },
   products: { type: [reviewProductSchema], default: [] },
   rating: { type: Number, required: true, min: 1, max: 5 },
   text: { type: String, required: true, trim: true, maxlength: 1000 },
