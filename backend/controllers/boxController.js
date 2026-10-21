@@ -2,7 +2,7 @@ const Box = require("../models/Box");
 const Product = require("../models/Product");
 const { resolveBoxCategories } = require("../utils/catalog");
 
-// @route GET /api/boxes
+// Public shop catalog: active boxes with generated item lists.
 const getBoxes = async (req, res) => {
   try {
     const boxes = await Box.find({ active: true }).lean();
@@ -17,36 +17,43 @@ const getBoxes = async (req, res) => {
   }
 };
 
-// @route POST /api/boxes  (admin only — used to set up your two tiers)
+const getAllBoxes = async (req, res) => {
+  try {
+    const boxes = await Box.find().sort({ active: -1, price: 1 }).lean();
+    const result = await Promise.all(boxes.map(async (box) => ({ ...box, categoryDefinitions: await resolveBoxCategories(box) })));
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const createBox = async (req, res) => {
   try {
     const box = await Box.create(req.body);
     res.status(201).json(box);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
-// @route PUT /api/boxes/:id  (admin only — e.g. updating categories, price, items)
 const updateBox = async (req, res) => {
   try {
-    const box = await Box.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const box = await Box.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!box) return res.status(404).json({ message: "Box not found" });
     res.json(box);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
-// @route DELETE /api/boxes/:id  (admin only)
 const deleteBox = async (req, res) => {
   try {
-    const box = await Box.findByIdAndDelete(req.params.id);
+    const box = await Box.findByIdAndUpdate(req.params.id, { active: false }, { new: true });
     if (!box) return res.status(404).json({ message: "Box not found" });
-    res.json({ message: "Box deleted" });
+    res.json({ message: "Box archived", box });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
-module.exports = { getBoxes, createBox, updateBox, deleteBox };
+module.exports = { getBoxes, getAllBoxes, createBox, updateBox, deleteBox };

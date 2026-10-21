@@ -1,12 +1,11 @@
 const Product = require("../models/Product");
 
-// @route GET /api/products  (public — optionally filter by ?category=pads)
+// Public shop catalog: only active, non-archived, in-stock products.
 const getProducts = async (req, res) => {
   try {
     const { category } = req.query;
     const filter = { active: true, archived: { $ne: true }, inStock: true };
     if (category) filter.category = category;
-
     const products = await Product.find(filter).sort({ category: 1, name: 1 });
     res.json(products);
   } catch (error) {
@@ -14,36 +13,43 @@ const getProducts = async (req, res) => {
   }
 };
 
-// @route POST /api/products  (admin only)
+// Admin catalog: includes out-of-stock, inactive, and archived products.
+const getAllProducts = async (req, res) => {
+  try {
+    const products = await Product.find().sort({ archived: 1, category: 1, name: 1 });
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const createProduct = async (req, res) => {
   try {
     const product = await Product.create(req.body);
     res.status(201).json(product);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
-// @route PUT /api/products/:id  (admin only)
 const updateProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json(product);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
-// @route DELETE /api/products/:id  (admin only)
-const deleteProduct = async (req, res) => {
+const archiveProduct = async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(req.params.id, { active: false, archived: true }, { new: true });
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json({ message: "Product archived", product });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
-module.exports = { getProducts, createProduct, updateProduct, deleteProduct };
+module.exports = { getProducts, getAllProducts, createProduct, updateProduct, deleteProduct: archiveProduct };
