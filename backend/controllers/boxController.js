@@ -46,6 +46,20 @@ const updateBox = async (req, res) => {
   }
 };
 
+const uploadBoxPhoto = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "Choose an image file first" });
+    const box = await Box.findById(req.params.id);
+    if (!box) return res.status(404).json({ message: "Box not found" });
+    const baseUrl = process.env.API_PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
+    box.photos = [...(box.photos || []), { url: `${baseUrl}/uploads/boxes/${req.file.filename}`, alt: req.body.alt || `${box.name} photo`, sortOrder: box.photos?.length || 0, active: true }];
+    await box.save();
+    res.status(201).json(box);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 const deleteBox = async (req, res) => {
   try {
     const box = await Box.findByIdAndUpdate(req.params.id, { active: false }, { new: true });
@@ -56,4 +70,4 @@ const deleteBox = async (req, res) => {
   }
 };
 
-module.exports = { getBoxes, getAllBoxes, createBox, updateBox, deleteBox };
+module.exports = { getBoxes, getAllBoxes, createBox, updateBox, uploadBoxPhoto, deleteBox };

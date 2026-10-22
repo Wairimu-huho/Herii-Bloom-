@@ -15,6 +15,7 @@ const boxSchema = new mongoose.Schema(
     },
     categoryIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
     image: { type: String }, // asset URL once uploaded
+    photos: [{ url: { type: String, required: true, trim: true }, alt: { type: String, trim: true }, sortOrder: { type: Number, default: 0 }, active: { type: Boolean, default: true } }],
     active: { type: Boolean, default: true }, // lets you retire a tier without deleting history
   },
   { timestamps: true }
