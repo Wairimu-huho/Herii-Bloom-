@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import WhatsAppFloat from "./components/WhatsAppFloat";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import SelfCare from "./pages/SelfCare";
@@ -14,7 +15,7 @@ import Admin from "./pages/Admin";
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-blush">
+    <div className="min-h-screen flex flex-col bg-blush overflow-x-hidden">
       <Toaster
         position="top-center"
         toastOptions={{
@@ -43,6 +44,7 @@ function App() {
         </Routes>
       </main>
       <Footer />
+      <WhatsAppFloat />
     </div>
   );
 }
