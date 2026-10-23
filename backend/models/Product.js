@@ -17,6 +17,7 @@ const productSchema = new mongoose.Schema(
     archived: { type: Boolean, default: false },
     inStock: { type: Boolean, default: true },
     inventory: { type: Number, min: 0, default: null },
+    photos: [{ url: { type: String, required: true, trim: true }, alt: { type: String, trim: true }, sortOrder: { type: Number, default: 0 }, active: { type: Boolean, default: true } }],
   },
   { timestamps: true }
 );

@@ -8,8 +8,8 @@ const reviewProductSchema = new mongoose.Schema({
 const reviewSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   order: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
-  box: { type: mongoose.Schema.Types.ObjectId, ref: "Box", required: true },
-  boxName: { type: String, required: true },
+  box: { type: mongoose.Schema.Types.ObjectId, ref: "Box" },
+  boxName: { type: String, default: "Standalone add-on" },
   reviewType: { type: String, enum: ["box", "products"], default: "box" },
   products: { type: [reviewProductSchema], default: [] },
   rating: { type: Number, required: true, min: 1, max: 5 },
