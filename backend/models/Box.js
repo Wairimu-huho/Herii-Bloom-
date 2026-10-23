@@ -5,6 +5,7 @@ const boxSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true }, // "Premium Box"
     tagline: { type: String, trim: true }, // "Complete care, more comfort."
+    description: { type: String, trim: true, maxlength: 1200 }, // Detailed description shown consistently in the shop
     price: { type: Number, required: true }, // monthly price in KSh
     mostPopular: { type: Boolean, default: false },
     items: [{ type: String }], // ["Menstrual cup", "Organic pads (variety)", ...]
