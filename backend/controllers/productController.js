@@ -32,7 +32,7 @@ const updateProduct = async (req, res) => {
   try {
     const current = await Product.findById(req.params.id).select("category");
     if (!current) return res.status(404).json({ message: "Product not found" });
-    if (req.body.photos && !isAddon(req.body.category || current.category)) delete req.body.photos;
+    if (req.body.photos && !isAddon(req.body.category || current.category)) req.body.photos = req.body.photos.slice(0, 1);
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json(product);
@@ -44,9 +44,10 @@ const uploadProductPhoto = async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "Choose an image file first" });
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
-    if (!isAddon(product.category)) return res.status(400).json({ message: "Photos are supported for Add-ons only" });
+    const addon = isAddon(product.category);
     const baseUrl = process.env.API_PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
-    product.photos = [...(product.photos || []), { url: `${baseUrl}/uploads/products/${req.file.filename}`, alt: req.body.alt || `${product.name} photo`, sortOrder: product.photos?.length || 0, active: true }];
+    const photo = { url: `${baseUrl}/uploads/products/${req.file.filename}`, alt: req.body.alt || `${product.name} photo`, sortOrder: 0, active: true };
+    product.photos = addon ? [...(product.photos || []), { ...photo, sortOrder: product.photos?.length || 0 }] : [photo];
     await product.save();
     res.status(201).json(product);
   } catch (error) { res.status(400).json({ message: error.message }); }
