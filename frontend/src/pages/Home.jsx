@@ -76,7 +76,8 @@ export default function Home() {
             <h1 className="font-display font-bold text-5xl md:text-6xl leading-[0.95] mb-6">
               <span className="text-brand">Your</span>{" "}
               <span className="text-ink">Period.</span>
-              <br />
+                
+
               <span className="text-ink">Your Power.</span>
             </h1>
             <p className="font-body text-sm text-ink-soft max-w-md mb-8 leading-relaxed">
@@ -117,7 +118,8 @@ export default function Home() {
               <Icon size={24} className="text-brand shrink-0" />
               <span className="font-body text-sm text-ink leading-tight">
                 {label}
-                <br />
+                  
+
                 {sub}
               </span>
             </div>
@@ -162,7 +164,7 @@ export default function Home() {
               >
                 <div className="min-h-[280px] w-full overflow-hidden bg-blush-deep flex items-center justify-center">
                   <img
-                    src={cardBox}
+                    src={box.photos?.find((photo) => photo.active !== false)?.url || cardBox}
                     alt={`${box.name} contents`}
                     className="block w-full h-full object-cover"
                   />
