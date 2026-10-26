@@ -1,90 +1,122 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
-import { Archive, Check, Package, Settings, Tags, Store } from "lucide-react";
+import { ArrowRight, Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 import api from "../api/client";
-import { useAuth } from "../context/AuthContext";
+import cardBox from "../assets/products/box-card.webp";
+import heroBox from "../assets/products/box-hero.webp";
 
-const inputClass = "w-full rounded-xl border border-hairline bg-cream px-3 py-2.5 font-body text-sm text-ink focus:outline-none focus:border-brand";
-const formatKsh = (value) => `KSh ${Number(value || 0).toLocaleString()}`;
+const fallbackAbout = {
+  eyebrow: "OUR STORY",
+  title: "Care that sees the whole you.",
+  intro: "Heri Bloom makes menstrual health feel more supported, more comfortable, and more like an everyday act of self-care.",
+  storyHeading: "More than a monthly box",
+  story: "We believe your period should never make you feel like an afterthought. Heri Bloom brings thoughtful essentials, comforting extras, and real support together in one considered ritual.",
+  missionHeading: "Our mission",
+  mission: "To make menstrual care easier to access and nicer to experience, while creating space for every person to feel seen, prepared, and cared for.",
+  promiseHeading: "Our promise to you",
+  promise: "Every box is chosen with comfort, dignity, and joy in mind—from the essentials you need to the small details that help you feel like yourself.",
+  pillarOneTitle: "Comfort first",
+  pillarOneText: "Thoughtful essentials chosen to help you feel prepared and at ease.",
+  pillarTwoTitle: "Care with dignity",
+  pillarTwoText: "A period-care experience that treats your needs as important, never an afterthought.",
+  pillarThreeTitle: "Small joys",
+  pillarThreeText: "Comforting extras that turn a necessary routine into a gentler ritual.",
+  impactEyebrow: "CARE IN ACTION",
+  impactNumber: "01",
+  impactText: "For every season of your cycle, we are building a more thoughtful way to care.",
+  founderHeading: "A note from Heri Bloom",
+  founderNote: "Heri Bloom was created from a simple belief: care should feel personal. Thank you for making space for yourself here.",
+  founderName: "The Heri Bloom team",
+  ctaTitle: "Build a ritual that feels like you.",
+  ctaText: "Choose your essentials, add a little comfort, and let Heri Bloom meet you where you are.",
+};
 
-function Panel({ title, icon: Icon, children }) {
-  return <section className="bg-cream border border-hairline rounded-2xl p-6"><div className="flex items-center gap-3 mb-5"><Icon size={20} className="text-brand" /><h2 className="font-display font-bold text-2xl text-ink">{title}</h2></div>{children}</section>;
+function Divider() {
+  return <div className="flex items-center justify-center gap-3 mt-6"><span className="w-12 h-px bg-hairline" /><Heart size={13} className="text-brand" fill="currentColor" /><span className="w-12 h-px bg-hairline" /></div>;
 }
 
-export default function Admin() {
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  const [products, setProducts] = useState([]);
-  const [boxes, setBoxes] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [settings, setSettings] = useState(null);
-  const [boxCategorySelections, setBoxCategorySelections] = useState({});
-  const [newProduct, setNewProduct] = useState({ name: "", category: "", priceModifier: 0 });
-  const [newCategory, setNewCategory] = useState({ key: "", name: "", minSelections: 0, maxSelections: 1, allowRepeat: false, optionalExtra: false });
-  const [saving, setSaving] = useState(false);
-
-  const load = async () => {
-    const [productsResponse, boxesResponse, categoriesResponse, settingsResponse] = await Promise.all([
-      api.get("/api/products/admin"), api.get("/api/boxes/admin"), api.get("/api/catalog/categories"), api.get("/api/catalog/settings"),
-    ]);
-    setProducts(productsResponse.data); setBoxes(boxesResponse.data); setCategories(categoriesResponse.data); setSettings(settingsResponse.data);
-    setBoxCategorySelections(Object.fromEntries(boxesResponse.data.map((box) => [box._id, box.categoryIds?.length ? box.categoryIds : categoriesResponse.data.filter((category) => box.categories?.includes(category.key)).map((category) => category._id)])));
-    setNewProduct((current) => ({ ...current, category: current.category || categoriesResponse.data[0]?.key || "" }));
-  };
-
+export default function About() {
+  const [about, setAbout] = useState(fallbackAbout);
   useEffect(() => {
-    if (!loading && (!user || user.role !== "admin")) navigate("/login", { replace: true, state: { from: "/admin" } });
-  }, [loading, user, navigate]);
+    api.get("/api/catalog/settings")
+      .then(({ data }) => setAbout({ ...fallbackAbout, ...(data.about || {}) }))
+      .catch(() => {});
+  }, []);
 
-  useEffect(() => { if (user?.role === "admin") load().catch((error) => toast.error(error.response?.data?.message || "Could not load admin data")); }, [user]);
+  const pillars = [
+    { number: "01", title: about.pillarOneTitle, text: about.pillarOneText },
+    { number: "02", title: about.pillarTwoTitle, text: about.pillarTwoText },
+    { number: "03", title: about.pillarThreeTitle, text: about.pillarThreeText },
+  ];
 
-  const updateProduct = async (product, changes) => {
-    try { const { data } = await api.put(`/api/products/${product._id}`, changes); setProducts((all) => all.map((item) => item._id === data._id ? data : item)); toast.success(`${data.name} updated`); }
-    catch (error) { toast.error(error.response?.data?.message || "Could not update product"); }
-  };
+  return (
+    <div className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#fdf7f8] text-ink">
+      <section className="bg-blush-deep overflow-hidden">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 md:py-28 grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center">
+          <div className="relative z-10">
+            <p className="font-body text-xs tracking-[0.24em] text-brand mb-5">{about.eyebrow}</p>
+            <h1 className="font-display font-normal text-5xl sm:text-6xl md:text-7xl leading-[0.94] text-ink">{about.title}</h1>
+            <Divider />
+            <p className="font-body font-medium text-base sm:text-lg text-ink leading-8 mt-7 max-w-xl">{about.intro}</p>
+          </div>
+          <div className="relative flex justify-center lg:justify-end">
+            <div className="absolute -top-8 right-8 sm:right-16 text-brand/10 font-display text-[10rem] sm:text-[14rem] leading-none select-none">✿</div>
+            <div className="relative w-full max-w-md h-[22rem] sm:h-[30rem] rounded-t-[10rem] rounded-b-[3rem] overflow-hidden border-[10px] border-cream shadow-2xl shadow-brand/10 bg-cream">
+              <img src={heroBox} alt="Heri Bloom care box" className="w-full h-full object-cover" />
+            </div>
+          </div>
+        </div>
+      </section>
 
-  const addProduct = async (event) => {
-    event.preventDefault(); setSaving(true);
-    try { const { data } = await api.post("/api/products", { ...newProduct, priceModifier: Number(newProduct.priceModifier) }); setProducts((all) => [...all, data]); setNewProduct({ name: "", category: categories[0]?.key || "", priceModifier: 0 }); toast.success("Product added"); }
-    catch (error) { toast.error(error.response?.data?.message || "Could not add product"); }
-    finally { setSaving(false); }
-  };
+      <section className="bg-ink text-cream px-4 sm:px-6 py-16 sm:py-20 md:py-24 text-center">
+        <div className="max-w-4xl mx-auto">
+          <p className="font-body text-xs tracking-[0.24em] text-cream/60 mb-5">{about.missionHeading}</p>
+          <blockquote className="font-display italic font-normal text-3xl sm:text-4xl md:text-5xl leading-tight">“{about.mission}”</blockquote>
+          <Divider />
+        </div>
+      </section>
 
-  const archive = async (product) => {
-    if (!window.confirm(`Archive ${product.name}? It will disappear from the shop but remain in past orders.`)) return;
-    try { const { data } = await api.delete(`/api/products/${product._id}`); setProducts((all) => all.map((item) => item._id === product._id ? data.product : item)); toast.success("Product archived"); }
-    catch (error) { toast.error(error.response?.data?.message || "Could not archive product"); }
-  };
+      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 md:py-28">
+        <section className="grid lg:grid-cols-[1.05fr_0.95fr] gap-8 lg:gap-16 items-center">
+          <div className="rounded-[3rem] overflow-hidden bg-blush-deep aspect-[4/3] shadow-xl shadow-brand/10">
+            <img src={cardBox} alt="Heri Bloom ritual box" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <p className="font-body text-xs tracking-[0.24em] text-brand mb-4">THE HERI BLOOM APPROACH</p>
+            <h2 className="font-display font-normal text-4xl sm:text-5xl leading-tight text-ink">{about.storyHeading}</h2>
+            <p className="font-body font-medium text-sm sm:text-base text-ink leading-8 mt-6">{about.story}</p>
+          </div>
+        </section>
 
-  const addCategory = async (event) => {
-    event.preventDefault(); setSaving(true);
-    try { const { data } = await api.post("/api/catalog/categories", { ...newCategory, minSelections: Number(newCategory.minSelections), maxSelections: newCategory.maxSelections === "" ? null : Number(newCategory.maxSelections) }); setCategories((all) => [...all, data]); setNewCategory({ key: "", name: "", minSelections: 0, maxSelections: 1, allowRepeat: false, optionalExtra: false }); toast.success("Category added"); }
-    catch (error) { toast.error(error.response?.data?.message || "Could not add category"); }
-    finally { setSaving(false); }
-  };
+        <section className="mt-20 sm:mt-28">
+          <div className="text-center max-w-2xl mx-auto">
+            <p className="font-body text-xs tracking-[0.24em] text-brand mb-4">A GENTLER RITUAL</p>
+            <h2 className="font-display font-normal text-4xl sm:text-5xl text-ink">{about.promiseHeading}</h2>
+            <p className="font-body font-medium text-sm sm:text-base text-ink leading-8 mt-5">{about.promise}</p>
+          </div>
+          <div className="grid md:grid-cols-3 mt-12 border-y border-hairline">
+            {pillars.map((pillar, index) => <article key={pillar.number} className={`py-8 sm:py-10 md:px-8 ${index > 0 ? "border-t md:border-t-0 md:border-l border-hairline" : ""}`}><p className="font-body text-xs tracking-[0.2em] text-brand mb-5">{pillar.number}</p><h3 className="font-display text-2xl sm:text-3xl text-ink">{pillar.title}</h3><p className="font-body font-medium text-sm text-ink leading-7 mt-4">{pillar.text}</p></article>)}
+          </div>
+        </section>
 
-  const saveSettings = async (event) => {
-    event.preventDefault(); setSaving(true);
-    try { const { data } = await api.put("/api/catalog/settings", { ...settings, discountPercent: Number(settings.discountPercent), maxBoxesPerDay: Number(settings.maxBoxesPerDay), changeWindowDays: Number(settings.changeWindowDays), cutoffHour: Number(settings.cutoffHour), noDeliveryWeekdays: settings.noDeliveryWeekdays }); setSettings(data); toast.success("Checkout settings saved"); }
-    catch (error) { toast.error(error.response?.data?.message || "Could not save settings"); }
-    finally { setSaving(false); }
-  };
+        <section className="mt-20 sm:mt-28 bg-blush-deep border border-hairline rounded-[2rem] px-6 py-10 sm:px-10 md:py-14 grid md:grid-cols-[0.35fr_1fr] gap-7 md:gap-12 items-center">
+          <div><p className="font-body text-xs tracking-[0.24em] text-brand">{about.impactEyebrow}</p><p className="font-display text-7xl sm:text-8xl text-brand mt-3">{about.impactNumber}</p></div>
+          <p className="font-display text-2xl sm:text-3xl md:text-4xl leading-tight text-ink">{about.impactText}</p>
+        </section>
 
-  const updateBox = async (box, changes) => {
-    try { const { data } = await api.put(`/api/boxes/${box._id}`, changes); setBoxes((all) => all.map((item) => item._id === data._id ? { ...item, ...data } : item)); toast.success(`${data.name} updated`); }
-    catch (error) { toast.error(error.response?.data?.message || "Could not update box"); }
-  };
+        <section className="mt-20 sm:mt-28 max-w-3xl mx-auto text-center">
+          <p className="font-body text-xs tracking-[0.24em] text-brand mb-4">A PERSONAL NOTE</p>
+          <h2 className="font-display font-normal text-4xl sm:text-5xl text-ink">{about.founderHeading}</h2>
+          <p className="font-body font-medium text-base sm:text-lg text-ink leading-8 mt-6">{about.founderNote}</p>
+          <p className="font-script text-3xl text-brand-dark mt-7">{about.founderName}</p>
+        </section>
 
-  if (loading || !user || user.role !== "admin") return <p className="font-body text-ink-soft text-center py-32">Checking admin access...</p>;
-
-  return <div className="max-w-6xl mx-auto px-6 py-12"><div className="flex flex-wrap items-end justify-between gap-4 mb-10"><div><p className="font-body text-xs font-medium tracking-[0.2em] text-brand mb-2">ADMIN DASHBOARD</p><h1 className="font-display font-bold text-4xl text-ink">Manage Heri Bloom</h1><p className="font-body text-sm text-ink-soft mt-2">Welcome, {user.name}. Changes here update what customers see in the shop.</p></div><button type="button" onClick={() => navigate("/")} className="font-body text-sm text-brand hover:text-brand-dark">Back to storefront</button></div>
-    <div className="space-y-6">
-      <Panel title="Products and stock" icon={Package}><p className="font-body text-sm text-ink-soft mb-5">Set a product back to <strong>in stock</strong> when your vendor has replenished it. Archive products instead of deleting them so historical orders remain readable.</p><form onSubmit={addProduct} className="grid md:grid-cols-[1.4fr_1fr_0.7fr_auto] gap-3 mb-7"><input className={inputClass} required placeholder="New product name" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} /><select className={inputClass} required value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}><option value="">Choose category</option>{categories.map((category) => <option key={category._id} value={category.key}>{category.name}</option>)}</select><input className={inputClass} type="number" min="0" placeholder="Extra KSh" value={newProduct.priceModifier} onChange={(e) => setNewProduct({ ...newProduct, priceModifier: e.target.value })} /><button disabled={saving} className="bg-brand text-cream rounded-xl px-5 font-body text-sm">Add product</button></form><div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="border-b border-hairline font-body text-xs text-ink-soft"><th className="py-3 pr-3">Product</th><th className="py-3 pr-3">Category</th><th className="py-3 pr-3">Price extra</th><th className="py-3 pr-3">Stock</th><th className="py-3">Action</th></tr></thead><tbody>{products.map((product) => <tr key={product._id} className="border-b border-hairline/60 font-body text-sm"><td className="py-3 pr-3 text-ink">{product.name}{product.archived && <span className="ml-2 text-xs text-ink-soft">Archived</span>}</td><td className="py-3 pr-3 text-ink-soft">{product.category}</td><td className="py-3 pr-3 text-ink-soft">{formatKsh(product.priceModifier)}</td><td className="py-3 pr-3"><button type="button" disabled={product.archived} onClick={() => updateProduct(product, { inStock: !product.inStock, active: true })} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs ${product.inStock && !product.archived ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>{product.inStock && !product.archived && <Check size={12} />}{product.archived ? "Archived" : product.inStock ? "In stock" : "Out of stock"}</button></td><td className="py-3"><div className="flex gap-3">{!product.archived && <button type="button" onClick={() => archive(product)} className="inline-flex items-center gap-1 text-xs text-brand"><Archive size={13} /> Archive</button>}{product.archived && <button type="button" onClick={() => updateProduct(product, { archived: false, active: true, inStock: true })} className="text-xs text-brand">Restore</button>}</div></td></tr>)}</tbody></table></div></Panel>
-      <Panel title="Categories" icon={Tags}><p className="font-body text-sm text-ink-soft mb-5">Create categories such as Bath bombs or Essential oils without changing code. Assigning a category to a box is available through the box API and can be added to this screen next.</p><form onSubmit={addCategory} className="grid md:grid-cols-[1fr_1fr_0.6fr_0.6fr_auto] gap-3 mb-6"><input className={inputClass} required placeholder="Key, e.g. bath-bombs" value={newCategory.key} onChange={(e) => setNewCategory({ ...newCategory, key: e.target.value })} /><input className={inputClass} required placeholder="Customer-facing name" value={newCategory.name} onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })} /><input className={inputClass} type="number" min="0" placeholder="Pick min" value={newCategory.minSelections} onChange={(e) => setNewCategory({ ...newCategory, minSelections: e.target.value })} /><input className={inputClass} type="number" min="0" placeholder="Pick max" value={newCategory.maxSelections} onChange={(e) => setNewCategory({ ...newCategory, maxSelections: e.target.value })} /><button disabled={saving} className="bg-brand text-cream rounded-xl px-5 font-body text-sm">Add</button></form><div className="grid md:grid-cols-3 gap-3">{categories.map((category) => <div key={category._id} className="rounded-xl border border-hairline p-4"><p className="font-body font-semibold text-ink">{category.name}</p><p className="font-body text-xs text-ink-soft mt-1">{category.key} · pick {category.minSelections}–{category.maxSelections ?? "any"}</p><p className="font-body text-xs text-ink-soft mt-1">{category.optionalExtra ? "Optional paid extra" : "Included category"}{category.allowRepeat ? " · repeats allowed" : ""}</p></div>)}</div></Panel>
-      <Panel title="Boxes" icon={Store}><p className="font-body text-sm text-ink-soft mb-5">Choose which database categories each box offers. This is where you would enable Bath bombs for Premium only, for example.</p><div className="grid md:grid-cols-2 gap-4">{boxes.map((box) => <div key={box._id} className="rounded-xl border border-hairline p-4"><div className="flex justify-between gap-4"><div><p className="font-display font-bold text-xl text-ink">{box.name}</p><p className="font-body text-sm text-brand">{formatKsh(box.price)}</p></div><button type="button" onClick={() => updateBox(box, { active: !box.active })} className={`h-fit rounded-full px-3 py-1 text-xs ${box.active ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}`}>{box.active ? "Active" : "Archived"}</button></div><div className="grid grid-cols-2 gap-2 mt-4">{categories.map((category) => { const selected = boxCategorySelections[box._id] || []; return <label key={category._id} className="flex items-center gap-2 font-body text-xs text-ink"><input type="checkbox" checked={selected.includes(category._id)} onChange={(event) => setBoxCategorySelections((all) => ({ ...all, [box._id]: event.target.checked ? [...selected, category._id] : selected.filter((id) => id !== category._id) }))} className="accent-brand" />{category.name}</label>; })}</div><button type="button" onClick={() => updateBox(box, { categoryIds: boxCategorySelections[box._id] || [] })} className="mt-4 bg-brand text-cream rounded-xl px-4 py-2 font-body text-xs">Save categories</button></div>)}</div></Panel>
-      {settings && <Panel title="Checkout and delivery settings" icon={Settings}><form onSubmit={saveSettings} className="grid md:grid-cols-2 gap-4"><label className="font-body text-sm text-ink">Three-month discount %<input className={`${inputClass} mt-1`} type="number" min="0" max="100" value={settings.discountPercent} onChange={(e) => setSettings({ ...settings, discountPercent: e.target.value })} /></label><label className="font-body text-sm text-ink">Maximum boxes per day<input className={`${inputClass} mt-1`} type="number" min="1" value={settings.maxBoxesPerDay} onChange={(e) => setSettings({ ...settings, maxBoxesPerDay: e.target.value })} /></label><label className="font-body text-sm text-ink">Earliest bookable date<input className={`${inputClass} mt-1`} type="date" value={new Date(settings.earliestBookableDate).toISOString().slice(0, 10)} onChange={(e) => setSettings({ ...settings, earliestBookableDate: e.target.value })} /></label><label className="font-body text-sm text-ink">Change window in days<input className={`${inputClass} mt-1`} type="number" min="0" value={settings.changeWindowDays} onChange={(e) => setSettings({ ...settings, changeWindowDays: e.target.value })} /></label><label className="font-body text-sm text-ink">Cutoff hour, 0–23<input className={`${inputClass} mt-1`} type="number" min="0" max="23" value={settings.cutoffHour} onChange={(e) => setSettings({ ...settings, cutoffHour: e.target.value })} /></label><label className="flex items-center gap-2 font-body text-sm text-ink mt-7"><input type="checkbox" checked={settings.discountAppliesToAddons} onChange={(e) => setSettings({ ...settings, discountAppliesToAddons: e.target.checked })} className="accent-brand" /> Discount applies to add-ons</label><button disabled={saving} className="md:col-span-2 bg-brand text-cream rounded-xl py-3 font-body text-sm">Save checkout settings</button></form></Panel>}
+        <section className="mt-20 sm:mt-28 bg-ink text-cream rounded-[2rem] px-6 py-12 sm:px-10 md:py-16 text-center">
+          <h2 className="font-display font-normal text-3xl sm:text-4xl">{about.ctaTitle}</h2>
+          <p className="font-body font-medium text-sm sm:text-base text-cream/90 leading-7 max-w-2xl mx-auto mt-4">{about.ctaText}</p>
+          <Link to="/shop#choose-box" className="inline-flex items-center gap-2 mt-8 rounded-full border border-cream/70 text-cream px-6 py-3 font-body font-semibold text-sm hover:bg-cream hover:text-ink transition-colors">Explore the boxes <ArrowRight size={16} /></Link>
+        </section>
+      </main>
     </div>
-  </div>;
+  );
 }
-
