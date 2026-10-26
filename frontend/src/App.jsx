@@ -7,6 +7,7 @@ import WhatsAppFloat from "./components/WhatsAppFloat";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import SelfCare from "./pages/SelfCare";
+import ArticleDetail from "./pages/ArticleDetail";
 import Community from "./pages/Community";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -45,6 +46,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/self-care" element={<SelfCare />} />
+          <Route path="/self-care/:slug" element={<ArticleDetail />} />
           <Route path="/community" element={<Community />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
