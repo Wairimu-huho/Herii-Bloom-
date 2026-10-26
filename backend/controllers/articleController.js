@@ -79,4 +79,16 @@ const deleteArticle = async (req, res) => {
   }
 };
 
-module.exports = { getArticles, getAllArticles, getArticleBySlug, createArticle, updateArticle, deleteArticle };
+const uploadArticleCover = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "Choose an image file first" });
+    const article = await Article.findById(req.params.id);
+    if (!article) return res.status(404).json({ message: "Article not found" });
+    const baseUrl = process.env.API_PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
+    article.coverImage = `${baseUrl}/uploads/articles/${req.file.filename}`;
+    await article.save();
+    res.json(article);
+  } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
+module.exports = { getArticles, getAllArticles, getArticleBySlug, createArticle, updateArticle, deleteArticle, uploadArticleCover };
