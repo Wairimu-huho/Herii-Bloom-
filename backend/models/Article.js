@@ -11,7 +11,8 @@ const articleSchema = new mongoose.Schema(
       enum: ["cycle education", "self care rituals", "product education", "wellness tips"],
       default: "wellness tips",
     },
-    coverImage: { type: String }, // asset URL
+    coverImage: { type: String, trim: true }, // optional image URL
+    sourceUrl: { type: String, trim: true }, // optional source/reference link
     author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // admin who wrote it
     published: { type: Boolean, default: false }, // lets you draft before it goes live
     publishedAt: { type: Date },
