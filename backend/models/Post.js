@@ -9,7 +9,8 @@ const postSchema = new mongoose.Schema(
     // "hidden" once auto-flagged by reports, "removed" once an admin confirms it should stay down.
     status: { type: String, enum: ["visible", "hidden", "removed"], default: "visible" },
     reportCount: { type: Number, default: 0 },
-    reportedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // prevents the same user reporting twice
+    reportedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    likedBy: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], default: [] }, // prevents the same user reporting twice
     flaggedByFilter: { type: Boolean, default: false }, // true if the profanity filter caught something on submission
   },
   { timestamps: true }

@@ -34,6 +34,19 @@ const createPost = async (req, res) => {
   }
 };
 
+const togglePostLike = async (req, res) => {
+  try {
+    const post = await Post.findOne({ _id: req.params.id, status: "visible" });
+    if (!post) return res.status(404).json({ message: "Post not found" });
+    const likedBy = post.likedBy || [];
+    const index = likedBy.findIndex((id) => String(id) === String(req.user._id));
+    if (index === -1) likedBy.push(req.user._id); else likedBy.splice(index, 1);
+    post.likedBy = likedBy;
+    await post.save();
+    res.json({ likes: likedBy.length, liked: index === -1 });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 // @route POST /api/posts/:id/report  (any logged-in user)
 const reportPost = async (req, res) => {
   try {
@@ -90,4 +103,4 @@ const moderatePost = async (req, res) => {
   }
 };
 
-module.exports = { getPosts, createPost, reportPost, getModerationQueue, moderatePost };
+module.exports = { getPosts, createPost, reportPost, getModerationQueue, moderatePost, togglePostLike };
