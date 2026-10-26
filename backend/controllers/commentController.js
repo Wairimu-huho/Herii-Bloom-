@@ -33,6 +33,31 @@ const createComment = async (req, res) => {
   }
 };
 
+const getArticleComments = async (req, res) => {
+  try {
+    const Article = require("../models/Article");
+    const article = await Article.findOne({ slug: req.params.slug });
+    if (!article) return res.status(404).json({ message: "Article not found" });
+    const comments = await Comment.find({ article: article._id, status: "visible" }).populate("user", "name").sort({ createdAt: 1 });
+    res.json(comments);
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+const createArticleComment = async (req, res) => {
+  try {
+    const Article = require("../models/Article");
+    const article = await Article.findOne({ slug: req.params.slug, published: true });
+    if (!article) return res.status(404).json({ message: "Article not found" });
+    const content = String(req.body.content || "").trim();
+    if (!content) return res.status(400).json({ message: "Comment cannot be empty" });
+    if (content.length > 1000) return res.status(400).json({ message: "Comment must be 1000 characters or fewer" });
+    const { flaggedByFilter } = checkContent(content);
+    const comment = await Comment.create({ article: article._id, user: req.user._id, content, flaggedByFilter, status: flaggedByFilter ? "hidden" : "visible" });
+    await comment.populate("user", "name");
+    res.status(201).json({ comment, flagged: flaggedByFilter });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 // @route POST /api/comments/:id/report  (any logged-in user)
 const reportComment = async (req, res) => {
   try {
@@ -63,6 +88,7 @@ const getCommentModerationQueue = async (req, res) => {
     const comments = await Comment.find({ status: "hidden" })
       .populate("user", "name email")
       .populate("post", "title")
+      .populate("article", "title slug")
       .sort({ reportCount: -1 });
     res.json(comments);
   } catch (error) {
@@ -92,6 +118,8 @@ const moderateComment = async (req, res) => {
 
 module.exports = {
   getComments,
+  getArticleComments,
+  createArticleComment,
   createComment,
   reportComment,
   getCommentModerationQueue,

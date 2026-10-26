@@ -13,7 +13,8 @@ const articleSchema = new mongoose.Schema(
     },
     coverImage: { type: String, trim: true }, // optional image URL
     sourceUrl: { type: String, trim: true }, // optional source/reference link
-    author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // admin who wrote it
+    author: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    likedBy: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], default: [] },
     published: { type: Boolean, default: false }, // lets you draft before it goes live
     publishedAt: { type: Date },
   },

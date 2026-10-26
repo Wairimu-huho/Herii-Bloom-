@@ -11,8 +11,11 @@ const {
   updateArticle,
   deleteArticle,
   uploadArticleCover,
+  getArticleEngagement,
+  toggleArticleLike,
 } = require("../controllers/articleController");
-const { protect, adminOnly } = require("../middleware/authMiddleware");
+const { protect, optionalProtect, adminOnly } = require("../middleware/authMiddleware");
+const { getArticleComments, createArticleComment } = require("../controllers/commentController");
 const uploadDirectory = path.join(__dirname, "../uploads/articles");
 fs.mkdirSync(uploadDirectory, { recursive: true });
 const storage = multer.diskStorage({
@@ -23,6 +26,10 @@ const upload = multer({ storage, limits: { fileSize: 8 * 1024 * 1024 }, fileFilt
 
 router.get("/admin", protect, adminOnly, getAllArticles);
 router.get("/", getArticles);
+router.get("/:slug/comments", getArticleComments);
+router.post("/:slug/comments", protect, createArticleComment);
+router.get("/:slug/engagement", optionalProtect, getArticleEngagement);
+router.post("/:slug/like", protect, toggleArticleLike);
 router.get("/:slug", getArticleBySlug);
 router.post("/", protect, adminOnly, createArticle);
 router.put("/:id", protect, adminOnly, updateArticle);

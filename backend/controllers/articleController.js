@@ -79,6 +79,29 @@ const deleteArticle = async (req, res) => {
   }
 };
 
+const getArticleEngagement = async (req, res) => {
+  try {
+    const article = await Article.findOne({ slug: req.params.slug, published: true }).select("likedBy");
+    if (!article) return res.status(404).json({ message: "Article not found" });
+    const userId = req.user?._id ? String(req.user._id) : null;
+    const likedBy = article.likedBy || [];
+    res.json({ likes: likedBy.length, liked: userId ? likedBy.some((id) => String(id) === userId) : false });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
+const toggleArticleLike = async (req, res) => {
+  try {
+    const article = await Article.findOne({ slug: req.params.slug, published: true });
+    if (!article) return res.status(404).json({ message: "Article not found" });
+    const likedBy = article.likedBy || [];
+    const index = likedBy.findIndex((id) => String(id) === String(req.user._id));
+    if (index === -1) likedBy.push(req.user._id); else likedBy.splice(index, 1);
+    article.likedBy = likedBy;
+    await article.save();
+    res.json({ likes: article.likedBy.length, liked: index === -1 });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 const uploadArticleCover = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "Choose an image file first" });
@@ -91,4 +114,4 @@ const uploadArticleCover = async (req, res) => {
   } catch (error) { res.status(400).json({ message: error.message }); }
 };
 
-module.exports = { getArticles, getAllArticles, getArticleBySlug, createArticle, updateArticle, deleteArticle, uploadArticleCover };
+module.exports = { getArticles, getAllArticles, getArticleBySlug, createArticle, updateArticle, deleteArticle, uploadArticleCover, getArticleEngagement, toggleArticleLike };

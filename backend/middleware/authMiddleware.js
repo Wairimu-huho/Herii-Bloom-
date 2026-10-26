@@ -20,6 +20,19 @@ const protect = async (req, res, next) => {
   }
 };
 
+const optionalProtect = async (req, _res, next) => {
+  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+    try {
+      const token = req.headers.authorization.split(" ")[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id).select("-password");
+    } catch (_error) {
+      req.user = null;
+    }
+  }
+  next();
+};
+
 const adminOnly = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     return next();
@@ -27,4 +40,4 @@ const adminOnly = (req, res, next) => {
   return res.status(403).json({ message: "Admin access only" });
 };
 
-module.exports = { protect, adminOnly };
+module.exports = { protect, optionalProtect, adminOnly };
