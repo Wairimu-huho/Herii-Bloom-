@@ -44,6 +44,27 @@ const aboutSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const policySchema = new mongoose.Schema(
+  {
+    title: { type: String, trim: true, default: "" },
+    summary: { type: String, trim: true, default: "" },
+    body: { type: String, trim: true, default: "" },
+    version: { type: String, trim: true, default: "1.0" },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+const legalSchema = new mongoose.Schema(
+  {
+    shipping: { type: policySchema, default: () => ({ title: "Shipping & delivery", summary: "Clear delivery details before you place your order.", body: "We deliver within our published service area. Delivery dates are selected at checkout and may be affected by availability, public holidays, weather, or courier delays.\n\nYour courier receives the recipient name, phone number, and delivery address needed to complete the delivery. Please make sure these details are accurate.", version: "1.0" }) },
+    returns: { type: policySchema, default: () => ({ title: "Returns & refunds", summary: "What happens when an order needs to be changed, cancelled, or refunded.", body: "Please contact us as soon as possible if there is a problem with your order. Cancellation and postponement are only available within the change window and before the delivery cutoff.\n\nFor a three-month plan, eligible unshipped boxes are refunded. Delivered boxes are repriced at the normal one-time price before the refund is calculated.", version: "1.0" }) },
+    privacy: { type: policySchema, default: () => ({ title: "Privacy policy", summary: "How Heri Bloom collects, uses, stores, and protects your information.", body: "We collect the information needed to create your account, prepare your order, deliver your box, provide support, and improve the Heri Bloom experience. We do not ask for cycle dates.\n\nYou may contact us to request access, correction, or deletion of your personal information, subject to legal and operational record-keeping requirements.", version: "1.0" }) },
+    terms: { type: policySchema, default: () => ({ title: "Terms & conditions", summary: "The simple rules that apply when you use Heri Bloom and place an order.", body: "By using Heri Bloom, you agree to provide accurate information and follow the rules for orders, delivery, subscriptions, gifts, reviews, and community participation. Educational content is general information and is not medical advice.\n\nThree-month plans are prepaid and do not renew automatically. Changes, cancellations, and postponements are subject to the change window and delivery cutoff shown at checkout.", version: "1.0" }) },
+  },
+  { _id: false }
+);
+
 const storeSettingsSchema = new mongoose.Schema(
   {
     key: { type: String, default: "store", unique: true },
@@ -56,6 +77,7 @@ const storeSettingsSchema = new mongoose.Schema(
     cutoffHour: { type: Number, default: 12, min: 0, max: 23 },
     contact: { type: contactSchema, default: () => ({}) },
     about: { type: aboutSchema, default: () => ({}) },
+    legal: { type: legalSchema, default: () => ({}) },
   },
   { timestamps: true }
 );
