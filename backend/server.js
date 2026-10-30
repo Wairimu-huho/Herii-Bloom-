@@ -21,7 +21,7 @@ connectDB();
 const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
-app.use(express.json());
+app.use(express.json({ verify: (req, res, buffer) => { req.rawBody = Buffer.from(buffer); } }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/", (req, res) => res.send("Heri Bloom API is running"));

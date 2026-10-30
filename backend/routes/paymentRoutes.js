@@ -1,10 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
-const { initiatePayment, getPaymentStatus, mpesaCallback, stripeWebhook, cancelPayment } = require("../controllers/paymentController");
+const { initiatePayment, verifyPayment, getPaymentStatus, cancelPayment, paystackWebhook } = require("../controllers/paymentController");
+
 router.post("/initiate", protect, initiatePayment);
+router.get("/verify/:orderId", protect, verifyPayment);
 router.get("/status/:orderId", protect, getPaymentStatus);
 router.post("/cancel/:orderId", protect, cancelPayment);
-router.post("/mpesa/callback", mpesaCallback);
-router.post("/stripe/webhook", stripeWebhook);
+router.post("/paystack/webhook", paystackWebhook);
+
 module.exports = router;
