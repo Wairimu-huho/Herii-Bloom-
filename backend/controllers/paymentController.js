@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
 const { initializePaystackTransaction, verifyPaystackTransaction } = require("../services/paymentService");
+const { sendOrderConfirmationEmail } = require("../services/emailService");
 
 async function releaseInventory(order) {
   const quantities = (order.selections || []).reduce((all, item) => { all[String(item.product)] = (all[String(item.product)] || 0) + Number(item.quantity || 1); return all; }, {});
@@ -21,10 +22,11 @@ async function markPaymentFailed(orderId, reason) {
 async function markPaymentPaid(order, reference) {
   if (order.paymentStatus === "paid") return order;
   order.paymentStatus = "paid";
-  order.status = "active";
+  order.status = "confirmed";
   order.paidAt = new Date();
   order.paymentReference = reference || order.paymentReference;
   await order.save();
+  sendOrderConfirmationEmail(order).catch((error) => console.error("Order confirmation email failed:", error.message));
   return order;
 }
 

@@ -3,6 +3,8 @@ const Box = require("../models/Box");
 const Product = require("../models/Product");
 const StoreSettings = require("../models/StoreSettings");
 const { resolveBoxCategories } = require("../utils/catalog");
+const crypto = require("crypto");
+const { sendDeliveryDeliveredEmail } = require("../services/emailService");
 
 const dateOnly = (value) => {
   const d = new Date(value);
@@ -110,7 +112,7 @@ async function validateAndPrice({ box, selections, purchaseType, firstDeliveryDa
 
 const createOrder = async (req, res) => {
   try {
-    const { boxId, purchaseType = "one_time", selections = [], deliveryAddress, phone, gift = {}, cardMessage = "", firstDeliveryDate, cancellationAccepted } = req.body;
+    const { boxId, purchaseType = "one_time", selections = [], deliveryAddress, phone, gift = {}, cardMessage = "", firstDeliveryDate, cancellationAccepted, notificationPreferences = {} } = req.body;
     if (!phone?.trim()) return res.status(400).json({ message: "Phone number is required" });
     if (!deliveryAddress?.street?.trim() || !deliveryAddress?.city?.trim()) return res.status(400).json({ message: "Street and city are required" });
     if (gift.isGift && (!gift.recipientName?.trim() || !gift.recipientPhone?.trim())) return res.status(400).json({ message: "Gift recipient name and phone are required" });
@@ -132,6 +134,7 @@ const createOrder = async (req, res) => {
       }
     }
     const order = await Order.create({
+      status: "awaiting_payment",
       user: req.user._id,
       box: box._id,
       boxName: box.name,
@@ -147,6 +150,7 @@ const createOrder = async (req, res) => {
       gift: gift.isGift ? { isGift: true, recipientName: gift.recipientName, recipientPhone: gift.recipientPhone } : { isGift: false },
       cardMessage,
       cancellationAccepted: Boolean(cancellationAccepted),
+      notificationPreferences: { email: notificationPreferences.email !== false, whatsapp: notificationPreferences.whatsapp === true },
       deliveries: priced.deliveries,
     });
     for (const [productId, quantity] of Object.entries(priced.snapshots.reduce((all, snapshot) => { all[String(snapshot.product)] = (all[String(snapshot.product)] || 0) + snapshot.quantity; return all; }, {}))) {
@@ -161,7 +165,7 @@ const createOrder = async (req, res) => {
 
 const createStandaloneAddonOrder = async (req, res) => {
   try {
-    const { productId, quantity = 1, deliveryAddress, phone, firstDeliveryDate } = req.body;
+    const { productId, quantity = 1, deliveryAddress, phone, firstDeliveryDate, notificationPreferences = {} } = req.body;
     const requestedQuantity = Number(quantity);
     if (!Number.isInteger(requestedQuantity) || requestedQuantity < 1) return res.status(400).json({ message: "Quantity must be at least 1" });
     if (!phone?.trim()) return res.status(400).json({ message: "Phone number is required" });
@@ -176,7 +180,7 @@ const createStandaloneAddonOrder = async (req, res) => {
     if (alreadyBooked >= settings.maxBoxesPerDay) return res.status(400).json({ message: "That delivery date is full. Please choose another date." });
     const total = product.standalonePrice * requestedQuantity;
     const selection = { category: product.category, product: product._id, productName: product.name, unitPriceModifier: product.standalonePrice, quantity: requestedQuantity };
-    const order = await Order.create({ user: req.user._id, orderType: "standalone_addon", boxName: `Standalone: ${product.name}`, boxPrice: 0, purchaseType: "one_time", selections: [selection], productsTotal: total, totalPrice: total, deliveryAddress, phone, cancellationAccepted: true, deliveries: [{ sequence: 1, scheduledDate, selections: [selection], boxPrice: 0, productsTotal: total, totalPrice: total }] });
+    const order = await Order.create({ status: "awaiting_payment", user: req.user._id, orderType: "standalone_addon", boxName: `Standalone: ${product.name}`, boxPrice: 0, purchaseType: "one_time", selections: [selection], productsTotal: total, totalPrice: total, deliveryAddress, phone, cancellationAccepted: true, notificationPreferences: { email: notificationPreferences.email !== false, whatsapp: notificationPreferences.whatsapp === true }, deliveries: [{ sequence: 1, scheduledDate, selections: [selection], boxPrice: 0, productsTotal: total, totalPrice: total }] });
     await Product.updateOne({ _id: product._id, inventory: { $ne: null } }, { $inc: { inventory: -requestedQuantity } });
     await Product.updateOne({ _id: product._id, inventory: 0 }, { $set: { inStock: false } });
     res.status(201).json(order);
@@ -185,6 +189,65 @@ const createStandaloneAddonOrder = async (req, res) => {
 
 const getMyOrders = async (req, res) => res.json(await Order.find({ user: req.user._id }).sort({ createdAt: -1 }));
 const getAllOrders = async (req, res) => res.json(await Order.find().populate("user", "name email phone").sort({ createdAt: -1 }));
+
+
+const createDeliveryToken = () => crypto.randomBytes(32).toString("hex");
+const hashDeliveryToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
+const publicDelivery = (order, delivery, token) => ({ orderNumber: order.orderNumber, boxName: order.boxName, status: delivery.status, sequence: delivery.sequence, scheduledDate: delivery.scheduledDate, totalPrice: delivery.totalPrice, gift: Boolean(order.gift?.isGift), deliveredAt: delivery.deliveredAt, customerAcknowledgedAt: delivery.customerAcknowledgedAt, problemReportedAt: delivery.problemReportedAt, problemText: delivery.problemText, deliveryToken: token });
+
+const updateDeliveryStatus = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).select("+deliveries.deliveryAccessToken +deliveries.deliveryAccessTokenHash");
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    const delivery = order.deliveries.id(req.body.deliveryId) || order.deliveries.find((item) => item.sequence === Number(req.body.sequence));
+    if (!delivery) return res.status(404).json({ message: "Delivery not found" });
+    const wasDelivered = delivery.status === "delivered";
+    const allowed = ["scheduled", "preparing", "out_for_delivery", "delivered", "problem", "cancelled"];
+    if (!allowed.includes(req.body.status)) return res.status(400).json({ message: "Invalid delivery status" });
+    delivery.status = req.body.status;
+    let token = null;
+    if (req.body.status === "delivered") {
+      delivery.deliveredAt = new Date();
+      if (!delivery.deliveryAccessToken) { token = createDeliveryToken(); delivery.deliveryAccessToken = token; delivery.deliveryAccessTokenHash = hashDeliveryToken(token); }
+      order.status = order.deliveries.some((item) => ["scheduled", "preparing", "out_for_delivery"].includes(item.status)) ? "active" : "delivered";
+    } else if (req.body.status === "preparing") order.status = "preparing";
+    else if (req.body.status === "out_for_delivery") order.status = "out_for_delivery";
+    else if (req.body.status === "problem") order.status = "problem";
+    await order.save();
+    if (req.body.status === "delivered" && !wasDelivered) sendDeliveryDeliveredEmail(order, delivery, token || delivery.deliveryAccessToken).catch((error) => console.error("Delivery email failed:", error.message));
+    res.json({ order, deliveryLink: token ? `${process.env.CLIENT_URL || ""}/delivery/${token}` : null });
+  } catch (error) { res.status(400).json({ message: error.message }); }
+};
+
+const findDeliveryByToken = async (token) => {
+  const hash = hashDeliveryToken(token);
+  const order = await Order.findOne({ "deliveries.deliveryAccessTokenHash": hash }).select("+deliveries.deliveryAccessToken +deliveries.deliveryAccessTokenHash");
+  if (!order) return null;
+  return { order, delivery: order.deliveries.find((item) => item.deliveryAccessTokenHash === hash) };
+};
+const getDeliveryByToken = async (req, res) => {
+  const found = await findDeliveryByToken(req.params.token);
+  if (!found) return res.status(404).json({ message: "Delivery link is invalid or expired" });
+  res.json(publicDelivery(found.order, found.delivery));
+};
+const confirmDeliveryByToken = async (req, res) => {
+  const found = await findDeliveryByToken(req.params.token);
+  if (!found) return res.status(404).json({ message: "Delivery link is invalid or expired" });
+  found.delivery.customerAcknowledgedAt = new Date();
+  if (found.delivery.status === "delivered" && found.order.deliveries.every((item) => item.status === "delivered" || item.status === "cancelled")) found.order.status = "delivered";
+  await found.order.save();
+  res.json(publicDelivery(found.order, found.delivery));
+};
+const reportDeliveryProblem = async (req, res) => {
+  const found = await findDeliveryByToken(req.params.token);
+  if (!found) return res.status(404).json({ message: "Delivery link is invalid or expired" });
+  found.delivery.status = "problem";
+  found.delivery.problemReportedAt = new Date();
+  found.delivery.problemText = String(req.body.problemText || "Delivery issue reported").slice(0, 1000);
+  found.order.status = "problem";
+  await found.order.save();
+  res.json(publicDelivery(found.order, found.delivery));
+};
 
 const reorder = async (req, res) => {
   const original = await Order.findOne({ _id: req.params.id, user: req.user._id });
@@ -221,4 +284,4 @@ const postponeOrder = async (req, res) => {
   res.json(order);
 };
 
-module.exports = { createOrder, createStandaloneAddonOrder, getMyOrders, getAllOrders, reorder, cancelOrder, postponeOrder };
+module.exports = { createOrder, createStandaloneAddonOrder, getMyOrders, getAllOrders, updateDeliveryStatus, getDeliveryByToken, confirmDeliveryByToken, reportDeliveryProblem, reorder, cancelOrder, postponeOrder };
