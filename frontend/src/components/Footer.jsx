@@ -24,10 +24,10 @@ const careLinks = [
 ];
 
 const policyLinks = [
-  { label: "Shipping & delivery", to: "/contact" },
-  { label: "Returns & refunds", to: "/contact" },
-  { label: "Privacy policy", to: "/contact" },
-  { label: "Terms & conditions", to: "/contact" },
+  { label: "Shipping & delivery", to: "/policies/shipping" },
+  { label: "Returns & refunds", to: "/policies/returns" },
+  { label: "Privacy policy", to: "/policies/privacy" },
+  { label: "Terms & conditions", to: "/policies/terms" },
 ];
 
 function FooterLink({ to, children }) {

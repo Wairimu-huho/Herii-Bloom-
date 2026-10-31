@@ -14,6 +14,7 @@ import Contact from "./pages/Contact";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Admin from "./pages/Admin";
+import PolicyPage from "./pages/PolicyPage";
 
 function ScrollRestoration() {
   const { pathname, hash } = useLocation();
@@ -53,6 +54,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/policies/:slug" element={<PolicyPage />} />
         </Routes>
       </main>
       <Footer />
