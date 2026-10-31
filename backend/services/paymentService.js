@@ -33,7 +33,7 @@ async function initializePaystackTransaction({ order, clientUrl }) {
     amount: Math.round(Number(order.totalPrice) * 100),
     currency,
     reference,
-    callback_url: `${clientUrl}/shop?payment=paystack&order=${order._id}`,
+    callback_url: `${clientUrl}/order-confirmation/${order._id}`,
     channels: (process.env.PAYSTACK_CHANNELS || "card,mobile_money,bank_transfer,ussd,qr").split(",").map((item) => item.trim()).filter(Boolean),
     metadata: JSON.stringify({ orderId: String(order._id), orderName: order.boxName }),
   });
