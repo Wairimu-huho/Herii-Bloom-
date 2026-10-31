@@ -17,6 +17,7 @@ import Admin from "./pages/Admin";
 import PolicyPage from "./pages/PolicyPage";
 import Delivery from "./pages/Delivery";
 import OrderStatus from "./pages/OrderStatus";
+import OrderConfirmation from "./pages/OrderConfirmation";
 
 function ScrollRestoration() {
   const { pathname, hash } = useLocation();
@@ -59,6 +60,7 @@ function App() {
           <Route path="/policies/:slug" element={<PolicyPage />} />
           <Route path="/delivery/:token" element={<Delivery />} />
           <Route path="/orders" element={<OrderStatus />} />
+          <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
         </Routes>
       </main>
       <Footer />
