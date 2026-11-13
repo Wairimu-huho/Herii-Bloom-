@@ -1,5 +1,15 @@
 const Product = require("../models/Product");
+const cloudinary = require("../config/cloudinary");
+
 const isAddon = (category) => String(category || "").toLowerCase().replace(/[^a-z]/g, "") === "addon";
+
+const uploadBufferToCloudinary = (buffer, options = {}) => new Promise((resolve, reject) => {
+  const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+    if (error) return reject(error);
+    resolve(result);
+  });
+  uploadStream.end(buffer);
+});
 
 const getProducts = async (req, res) => {
   try {
@@ -10,7 +20,9 @@ const getProducts = async (req, res) => {
     if (category) filter.category = category;
     const products = await Product.find(filter).sort({ category: 1, name: 1 });
     res.json(products);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 const getAllProducts = async (req, res) => {
@@ -20,37 +32,64 @@ const getAllProducts = async (req, res) => {
     await Product.updateMany({ hasOptions: { $exists: false } }, { $set: { hasOptions: true } });
     const products = await Product.find().sort({ archived: 1, category: 1, name: 1 });
     res.json(products);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 const createProduct = async (req, res) => {
-  try { const product = await Product.create(req.body); res.status(201).json(product); }
-  catch (error) { res.status(400).json({ message: error.message }); }
+  try {
+    const product = await Product.create(req.body);
+    res.status(201).json(product);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 const updateProduct = async (req, res) => {
   try {
     const current = await Product.findById(req.params.id).select("category");
     if (!current) return res.status(404).json({ message: "Product not found" });
-    if (req.body.photos && !isAddon(req.body.category || current.category)) req.body.photos = req.body.photos.slice(0, 1);
+    if (req.body.photos && !isAddon(req.body.category || current.category)) {
+      req.body.photos = req.body.photos.slice(0, 1);
+    }
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json(product);
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 const uploadProductPhoto = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "Choose an image file first" });
+
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
+
+    const result = await uploadBufferToCloudinary(req.file.buffer, {
+      folder: "heri-bloom/products",
+      resource_type: "image",
+      unique_filename: true,
+      overwrite: false,
+    });
+
     const addon = isAddon(product.category);
-    const baseUrl = process.env.API_PUBLIC_URL || `${req.protocol}://${req.get("host")}`;
-    const photo = { url: `${baseUrl}/uploads/products/${req.file.filename}`, alt: req.body.alt || `${product.name} photo`, sortOrder: 0, active: true };
-    product.photos = addon ? [...(product.photos || []), { ...photo, sortOrder: product.photos?.length || 0 }] : [photo];
+    const photo = {
+      url: result.secure_url,
+      alt: req.body.alt || `${product.name} photo`,
+      sortOrder: addon ? (product.photos?.length || 0) : 0,
+      active: true,
+    };
+
+    product.photos = addon ? [...(product.photos || []), photo] : [photo];
     await product.save();
     res.status(201).json(product);
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) {
+    console.error("Cloudinary product photo upload failed:", error);
+    res.status(400).json({ message: error.message || "Could not upload product photo" });
+  }
 };
 
 const archiveProduct = async (req, res) => {
@@ -58,7 +97,9 @@ const archiveProduct = async (req, res) => {
     const product = await Product.findByIdAndUpdate(req.params.id, { active: false, archived: true }, { new: true });
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json({ message: "Product archived", product });
-  } catch (error) { res.status(400).json({ message: error.message }); }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
 module.exports = { getProducts, getAllProducts, createProduct, updateProduct, uploadProductPhoto, deleteProduct: archiveProduct };

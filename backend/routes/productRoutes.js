@@ -1,21 +1,16 @@
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
 const multer = require("multer");
 const router = express.Router();
 const { getProducts, getAllProducts, createProduct, updateProduct, uploadProductPhoto, deleteProduct } = require("../controllers/productController");
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 
-const uploadDirectory = path.join(__dirname, "../uploads/products");
-fs.mkdirSync(uploadDirectory, { recursive: true });
-const storage = multer.diskStorage({
-  destination: (_req, _file, callback) => callback(null, uploadDirectory),
-  filename: (_req, file, callback) => callback(null, `product-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname).toLowerCase()}`),
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
-  fileFilter: (_req, file, callback) => callback(null, /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)),
+  fileFilter: (_req, file, callback) => {
+    if (/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)) return callback(null, true);
+    callback(new Error("Only JPEG, PNG, WebP, and GIF images are allowed"));
+  },
 });
 
 router.get("/", getProducts);
