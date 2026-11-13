@@ -8,6 +8,20 @@ const selectionSchema = new mongoose.Schema({
   quantity: { type: Number, default: 1, min: 1 },
 }, { _id: false });
 
+const cartItemSchema = new mongoose.Schema({
+  itemType: { type: String, enum: ["box", "addon", "product"], required: true },
+  box: { type: mongoose.Schema.Types.ObjectId, ref: "Box" },
+  product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+  name: { type: String, required: true, trim: true },
+  quantity: { type: Number, required: true, min: 1, default: 1 },
+  unitPrice: { type: Number, required: true, min: 0 },
+  productsTotal: { type: Number, default: 0, min: 0 },
+  discountAmount: { type: Number, default: 0, min: 0 },
+  totalPrice: { type: Number, required: true, min: 0 },
+  purchaseType: { type: String, enum: ["one_time", "three_month"] },
+  selections: { type: [selectionSchema], default: [] },
+}, { _id: true });
+
 const deliverySchema = new mongoose.Schema({
   sequence: { type: Number, required: true },
   scheduledDate: { type: Date, required: true },
@@ -31,7 +45,8 @@ const deliverySchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  orderType: { type: String, enum: ["box", "standalone_addon"], default: "box" },
+  orderType: { type: String, enum: ["box", "standalone_addon", "cart"], default: "box" },
+  items: { type: [cartItemSchema], default: [] },
   box: { type: mongoose.Schema.Types.ObjectId, ref: "Box" },
   boxName: { type: String, default: "Standalone add-on" },
   boxPrice: { type: Number, default: 0 },
