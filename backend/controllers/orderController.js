@@ -163,6 +163,74 @@ const createOrder = async (req, res) => {
   }
 };
 
+
+const createCartOrder = async (req, res) => {
+  try {
+    const { items = [], deliveryAddress, phone, gift = {}, cardMessage = "", firstDeliveryDate, cancellationAccepted, notificationPreferences = {} } = req.body;
+    if (!Array.isArray(items) || items.length < 1 || items.length > 20) return res.status(400).json({ message: "Your cart is empty or contains too many items" });
+    if (!phone?.trim()) return res.status(400).json({ message: "Phone number is required" });
+    if (!deliveryAddress?.street?.trim() || !deliveryAddress?.city?.trim()) return res.status(400).json({ message: "Street and city are required" });
+    if (gift.isGift && (!gift.recipientName?.trim() || !gift.recipientPhone?.trim())) return res.status(400).json({ message: "Gift recipient name and phone are required" });
+    if (cardMessage.length > 240) return res.status(400).json({ message: "Card message must be 240 characters or fewer" });
+
+    const boxItems = items.filter((item) => item.itemType === "box");
+    const standaloneItems = items.filter((item) => item.itemType === "addon" || item.itemType === "product");
+    if (items.some((item) => !["box", "addon", "product"].includes(item.itemType))) return res.status(400).json({ message: "Cart contains an invalid item type" });
+    if (boxItems.length > 1) return res.status(400).json({ message: "Only one ritual box can be checked out at a time" });
+    if (!boxItems.length && !standaloneItems.length) return res.status(400).json({ message: "Your cart is empty" });
+
+    let box = null;
+    let boxPricing = null;
+    let boxItemSnapshot = null;
+    if (boxItems.length) {
+      const boxItem = boxItems[0];
+      if (!boxItem.boxId) return res.status(400).json({ message: "Cart box is missing its box ID" });
+      box = await Box.findById(boxItem.boxId);
+      if (!box || !box.active) return res.status(404).json({ message: "Box not found" });
+      const purchaseType = boxItem.purchaseType === "three_month" ? "three_month" : "one_time";
+      if (purchaseType === "three_month" && cancellationAccepted !== true) return res.status(400).json({ message: "Please accept the three-month cancellation policy" });
+      boxPricing = await validateAndPrice({ box, selections: Array.isArray(boxItem.selections) ? boxItem.selections : [], purchaseType, firstDeliveryDate });
+      boxItemSnapshot = { itemType: "box", box: box._id, name: box.name, quantity: 1, unitPrice: box.price, productsTotal: boxPricing.productsTotal, discountAmount: boxPricing.discountAmount, totalPrice: boxPricing.totalPrice, purchaseType, selections: boxPricing.snapshots };
+    }
+
+    const standaloneSnapshots = [];
+    const standaloneItemsSnapshot = [];
+    let standaloneTotal = 0;
+    for (const item of standaloneItems) {
+      const quantity = Number(item.quantity || 1);
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 50) return res.status(400).json({ message: "Cart item quantity is invalid" });
+      const product = await Product.findOne({ _id: item.productId, active: true, archived: false, inStock: true }).select("name category standalonePrice inventory priceModifier");
+      const category = String(product?.category || "").toLowerCase().replace(/[^a-z]/g, "");
+      if (!product || (item.itemType === "addon" && !["addon", "addons"].includes(category)) || product.standalonePrice === null || product.standalonePrice === undefined) return res.status(400).json({ message: "One of your standalone cart items is no longer available" });
+      if (product.inventory !== null && product.inventory !== undefined && quantity > product.inventory) return res.status(400).json({ message: `${product.name} only has ${product.inventory} available` });
+      const unitPrice = Number(product.standalonePrice);
+      const snapshot = { category: product.category, product: product._id, productName: product.name, unitPriceModifier: unitPrice, quantity };
+      standaloneSnapshots.push(snapshot);
+      standaloneItemsSnapshot.push({ itemType: item.itemType, product: product._id, name: product.name, quantity, unitPrice, productsTotal: unitPrice * quantity, discountAmount: 0, totalPrice: unitPrice * quantity, purchaseType: "one_time", selections: [snapshot] });
+      standaloneTotal += unitPrice * quantity;
+    }
+
+    const settings = await getStoreSettings();
+    const allSnapshots = [...(boxPricing?.snapshots || []), ...standaloneSnapshots];
+    const allItems = [...(boxItemSnapshot ? [boxItemSnapshot] : []), ...standaloneItemsSnapshot];
+    const deliveries = boxPricing?.deliveries?.map((delivery, index) => {
+      if (index !== 0 || !standaloneSnapshots.length) return delivery;
+      return { ...delivery.toObject?.() || delivery, selections: [...delivery.selections, ...standaloneSnapshots], productsTotal: delivery.productsTotal + standaloneTotal, totalPrice: delivery.totalPrice + standaloneTotal };
+    }) || [{ sequence: 1, scheduledDate: (makeDates(firstDeliveryDate || settings.earliestBookableDate, 1, settings)[0]), selections: allSnapshots, boxPrice: box?.price || 0, productsTotal: (boxPricing?.productsTotal || 0) + standaloneTotal, discountAmount: 0, totalPrice: (box?.price || 0) + (boxPricing?.productsTotal || 0) + standaloneTotal }];
+    for (const delivery of deliveries) {
+      const start = dateOnly(delivery.scheduledDate); const end = new Date(start); end.setDate(end.getDate() + 1);
+      if (await Order.countDocuments({ status: { $ne: "cancelled" }, "deliveries.scheduledDate": { $gte: start, $lt: end } }) >= settings.maxBoxesPerDay) return res.status(400).json({ message: "That delivery date is full. Please choose another date." });
+    }
+    const totalPrice = (boxPricing?.totalPrice || 0) + standaloneTotal;
+    const order = await Order.create({ status: "awaiting_payment", orderType: "cart", user: req.user._id, items: allItems, box: box?._id, boxName: box?.name || "Cart order", boxPrice: box?.price || 0, purchaseType: boxPricing ? (boxItemSnapshot.purchaseType || "one_time") : "one_time", selections: allSnapshots, productsTotal: (boxPricing?.productsTotal || 0) + standaloneTotal, discountPercent: boxPricing?.discountPercent || 0, discountAmount: boxPricing?.discountAmount || 0, totalPrice, deliveryAddress, phone, gift: gift.isGift ? { isGift: true, recipientName: gift.recipientName, recipientPhone: gift.recipientPhone } : { isGift: false }, cardMessage, cancellationAccepted: Boolean(cancellationAccepted), notificationPreferences: { email: notificationPreferences.email !== false, whatsapp: notificationPreferences.whatsapp === true }, deliveries });
+    const quantities = allSnapshots.reduce((all, snapshot) => { all[String(snapshot.product)] = (all[String(snapshot.product)] || 0) + snapshot.quantity; return all; }, {});
+    for (const [productId, quantity] of Object.entries(quantities)) { await Product.updateOne({ _id: productId, inventory: { $ne: null } }, { $inc: { inventory: -quantity } }); await Product.updateOne({ _id: productId, inventory: 0 }, { $set: { inStock: false } }); }
+    res.status(201).json(order);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 const createStandaloneAddonOrder = async (req, res) => {
   try {
     const { productId, quantity = 1, deliveryAddress, phone, firstDeliveryDate, notificationPreferences = {} } = req.body;
@@ -284,4 +352,4 @@ const postponeOrder = async (req, res) => {
   res.json(order);
 };
 
-module.exports = { createOrder, createStandaloneAddonOrder, getMyOrders, getAllOrders, updateDeliveryStatus, getDeliveryByToken, confirmDeliveryByToken, reportDeliveryProblem, reorder, cancelOrder, postponeOrder };
+module.exports = { createOrder, createCartOrder, createStandaloneAddonOrder, getMyOrders, getAllOrders, updateDeliveryStatus, getDeliveryByToken, confirmDeliveryByToken, reportDeliveryProblem, reorder, cancelOrder, postponeOrder };
