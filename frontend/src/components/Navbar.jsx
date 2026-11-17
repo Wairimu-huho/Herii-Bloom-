@@ -29,14 +29,10 @@ export default function Navbar() {
   const closeMenu = () => setOpen(false);
 
   const navClass = ({ isActive }) =>
-    `whitespace-nowrap rounded-full px-3.5 py-2.5 font-body text-[11px] font-bold tracking-wide transition-all duration-300 lg:px-4 ${
-      isHome
-        ? isActive
-          ? "border border-white/70 bg-white/20 text-white shadow-sm"
-          : "border border-white/35 bg-transparent text-white hover:bg-white/15"
-        : isActive
-          ? "bg-[#F8E8ED] text-[#4B0D32] shadow-sm"
-          : "border border-[#4B0D32]/10 bg-[#4B0D32] text-[#FBF7F2] shadow-sm hover:bg-[#6B1747] hover:text-white"
+    `whitespace-nowrap rounded-full border border-[#4B0D32]/55 px-3.5 py-2.5 font-body text-[11px] font-bold tracking-wide text-[#4B0D32] transition-all duration-300 lg:px-4 ${
+      isActive
+        ? "bg-[#4B0D32] text-[#FBF7F2] shadow-sm"
+        : "bg-[#FBF7F2]/75 hover:bg-[#F8E8ED] hover:border-[#4B0D32]"
     }`;
 
   return (
@@ -78,10 +74,10 @@ export default function Navbar() {
                   Heri Bloom
                 </span>
 
-                <span className={`mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] ${isHome ? "text-white" : "text-[#4B0D32]"}`}>
+                <span className="mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] text-[#4B0D32]">
                   <span className={`h-px w-3 ${isHome ? "bg-[#4B0D32]/70" : "bg-[#4B0D32]/50"}`} />
                   THE RITUAL BOX
-                  <span className={`h-px w-3 ${isHome ? "bg-white/80" : "bg-[#4B0D32]/50"}`} />
+                  <span className="h-px w-3 bg-[#4B0D32]/50" />
                 </span>
               </span>
             </Link>
