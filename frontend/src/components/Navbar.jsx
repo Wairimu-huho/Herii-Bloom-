@@ -34,7 +34,7 @@ export default function Navbar() {
     }`;
 
   return (
-    <header className="absolute inset-x-0 top-0 z-50 px-3 pt-4 sm:px-6 md:pt-5">
+    <header className="sticky top-0 z-[100] w-full bg-[#FBF7F2] px-3 py-3 shadow-[0_8px_24px_-18px_rgba(75,13,50,0.35)] sm:px-6">
       <div className="mx-auto w-full max-w-[1440px]">
 
         {/* MAIN NAVBAR */}
@@ -68,11 +68,11 @@ export default function Navbar() {
               </span>
 
               <span className="hidden flex-col leading-none sm:flex">
-                <span className="whitespace-nowrap font-display text-[19px] font-bold tracking-[-.04em] text-[#FBF7F2] drop-shadow-md">
+                <span className="whitespace-nowrap font-display text-[19px] font-bold tracking-[-.04em] text-[#4B0D32]">
                   Heri Bloom
                 </span>
 
-                <span className="mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] text-[#FBF7F2] drop-shadow-md">
+                <span className="mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] text-[#4B0D32]">
                   <span className="h-px w-3 bg-[#FBF7F2]/80" />
                   THE RITUAL BOX
                   <span className="h-px w-3 bg-[#FBF7F2]/80" />
