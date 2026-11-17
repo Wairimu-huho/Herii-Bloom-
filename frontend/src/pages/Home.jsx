@@ -20,7 +20,6 @@ import api from "../api/client";
 import heroBox from "../assets/products/home-hero.png";
 import cardBox from "../assets/products/box-card.webp";
 
-import Navbar from "../components/Navbar";
 
 // --------------------------------------------------
 // BRAND FEATURES
@@ -321,8 +320,6 @@ export default function Home() {
           }
         }
       `}</style>
-
-      <Navbar />
 
       <main>
 
