@@ -54,7 +54,7 @@ export default function Navbar() {
               onClick={() => setOpen((value) => !value)}
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-[#FBF7F2] shadow-sm transition ${isHome ? "border-white/60 bg-white/10 hover:bg-white/20" : "border-[#4B0D32]/15 bg-[#4B0D32] hover:bg-[#6B1747]"}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm transition ${isHome ? "border-[#4B0D32]/25 bg-white/15 text-[#4B0D32] hover:bg-white/35" : "border-[#4B0D32]/15 bg-[#4B0D32] text-[#FBF7F2] hover:bg-[#6B1747]"}`}
             >
               {open ? <X size={17} /> : <Menu size={17} />}
             </button>
@@ -65,21 +65,21 @@ export default function Navbar() {
               aria-label="Heri Bloom home"
               className="flex shrink-0 items-center gap-2"
             >
-              <span className={`flex h-9 w-9 items-center justify-center rounded-full p-1.5 shadow-md ring-1 ring-white/40 ${isHome ? "bg-white/15" : "bg-[#4B0D32]"}`}>
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full p-1.5 shadow-md ring-1 ring-white/40 ${isHome ? "bg-white/20" : "bg-[#4B0D32]"}`}>
                 <img
                   src={lotus}
                   alt=""
-                  className="h-full w-full object-contain brightness-0 invert"
+                  className="h-full w-full object-contain" style={{ filter: "brightness(0) saturate(100%) invert(10%) sepia(35%) saturate(2948%) hue-rotate(282deg) brightness(87%) contrast(105%)" }}
                 />
               </span>
 
               <span className="hidden flex-col leading-none sm:flex">
-                <span className={`whitespace-nowrap font-display text-[19px] font-bold tracking-[-.04em] ${isHome ? "text-white" : "text-[#4B0D32]"}`}>
+                <span className={`whitespace-nowrap font-display text-[19px] font-bold tracking-[-.04em] ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}>
                   Heri Bloom
                 </span>
 
                 <span className={`mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] ${isHome ? "text-white" : "text-[#4B0D32]"}`}>
-                  <span className={`h-px w-3 ${isHome ? "bg-white/80" : "bg-[#4B0D32]/50"}`} />
+                  <span className={`h-px w-3 ${isHome ? "bg-[#4B0D32]/70" : "bg-[#4B0D32]/50"}`} />
                   THE RITUAL BOX
                   <span className={`h-px w-3 ${isHome ? "bg-white/80" : "bg-[#4B0D32]/50"}`} />
                 </span>
@@ -110,7 +110,7 @@ export default function Navbar() {
             {user ? (
               <div className="hidden items-center gap-2 font-body text-[11px] lg:flex">
 
-                <span className={`font-bold ${isHome ? "text-white" : "text-[#4B0D32]"}`}>
+                <span className={`font-bold ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}>
                   Hi, {user.name?.split(" ")[0]}
                 </span>
 
@@ -126,7 +126,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={logout}
-                  className={`font-bold transition hover:text-[#F6B6C8] ${isHome ? "text-white" : "text-[#4B0D32]"}`}
+                  className={`font-bold transition hover:text-[#C2185B] ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}
                 >
                   Log out
                 </button>
@@ -135,7 +135,7 @@ export default function Navbar() {
               <Link
                 to="/login"
                 aria-label="Log in"
-                className={`flex h-9 w-9 items-center justify-center rounded-full border text-[#FBF7F2] shadow-sm transition ${isHome ? "border-white/60 bg-white/10 hover:bg-white/20" : "border-[#4B0D32]/15 bg-[#4B0D32] hover:bg-[#6B1747]"}`}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border shadow-sm transition ${isHome ? "border-[#4B0D32]/25 bg-white/15 text-[#4B0D32] hover:bg-white/35" : "border-[#4B0D32]/15 bg-[#4B0D32] text-[#FBF7F2] hover:bg-[#6B1747]"}`}
               >
                 <User size={15} />
               </Link>
@@ -144,7 +144,7 @@ export default function Navbar() {
             <Link
               to="/shop"
               aria-label="Shopping bag"
-              className={`relative flex h-9 w-9 items-center justify-center rounded-full border text-[#FBF7F2] shadow-sm transition ${isHome ? "border-white/60 bg-white/10 hover:bg-white/20" : "border-[#4B0D32]/15 bg-[#4B0D32] hover:bg-[#6B1747]"}`}
+              className={`relative flex h-9 w-9 items-center justify-center rounded-full border shadow-sm transition ${isHome ? "border-[#4B0D32]/25 bg-white/15 text-[#4B0D32] hover:bg-white/35" : "border-[#4B0D32]/15 bg-[#4B0D32] text-[#FBF7F2] hover:bg-[#6B1747]"}`}
             >
               <ShoppingBag size={15} />
 
