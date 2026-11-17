@@ -45,8 +45,8 @@ const STYLES = `
 @keyframes hbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 @media (prefers-reduced-motion:reduce){.hb-rise,.hb-pop,.hb-float{animation:none}.hb{scroll-behavior:auto}}
 `;
-function LuxuryStepWrapper({ children, isActive = true }) {
-  return /* @__PURE__ */ React.createElement(motion.div, { initial: { opacity: 0.3, y: 20, scale: 0.98 }, animate: isActive ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0.25, y: 0, scale: 0.96 }, transition: { type: "spring", stiffness: 100, damping: 18, mass: 0.8 }, className: "origin-center" }, children);
+function LuxuryStepWrapper({ children }) {
+  return /* @__PURE__ */ React.createElement(motion.div, { initial: { opacity: 1, y: 20, scale: 1 }, animate: { opacity: 1, y: 0, scale: 1 }, transition: { type: "spring", stiffness: 100, damping: 18, mass: 0.8 }, className: "origin-center" }, children);
 }
 function Section({ n, title, hint, id, children, isActive = true, sectionRef }) {
   return /* @__PURE__ */ React.createElement(LuxuryStepWrapper, { isActive }, /* @__PURE__ */ React.createElement("section", { ref: sectionRef, id, className: "hb-rise scroll-mt-24 hb-editorial-section rounded-[12px] border border-[#4B0D32]/10 bg-white/65 p-6 shadow-sm md:p-10 lg:p-12" }, /* @__PURE__ */ React.createElement("div", { className: "mb-7 flex items-start gap-4" }, /* @__PURE__ */ React.createElement("span", { className: "font-display text-3xl leading-none text-[#C2185B]/60" }, String(n).padStart(2, "0")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] font-medium uppercase tracking-[0.28em] text-[#C2185B]" }, "Step ", n), /* @__PURE__ */ React.createElement("h2", { className: "font-display text-2xl text-[#4B0D32] md:text-[1.7rem]" }, title), hint && /* @__PURE__ */ React.createElement("p", { className: "mt-1 font-body text-sm font-light text-[#4B0D32]/70" }, hint))), children));
