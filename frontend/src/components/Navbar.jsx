@@ -81,7 +81,7 @@ export default function Navbar() {
                 <span className={`mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] ${isHome ? "text-white" : "text-[#4B0D32]"}`}>
                   <span className={`h-px w-3 ${isHome ? "bg-white/80" : "bg-[#4B0D32]/50"}`} />
                   THE RITUAL BOX
-                  <span className="h-px w-3 bg-[#FBF7F2]/80" />
+                  <span className={`h-px w-3 ${isHome ? "bg-white/80" : "bg-[#4B0D32]/50"}`} />
                 </span>
               </span>
             </Link>
