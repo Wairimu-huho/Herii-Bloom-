@@ -20,6 +20,7 @@ import api from "../api/client";
 import heroBox from "../assets/products/home-hero.png";
 import cardBox from "../assets/products/box-card.webp";
 
+import Navbar from "../components/Navbar";
 
 // --------------------------------------------------
 // BRAND FEATURES
@@ -321,13 +322,15 @@ export default function Home() {
         }
       `}</style>
 
+      <Navbar />
+
       <main>
 
         {/* ==========================================
             1. HERO SECTION
         ========================================== */}
 
-        <section className="relative min-h-[720px] overflow-hidden bg-[#FBF7F2] md:min-h-screen">
+        <section className="relative min-h-[720px] overflow-hidden bg-[#DDBFC5] md:min-h-screen">
 
           {/* HERO IMAGE */}
           <motion.img
@@ -340,9 +343,9 @@ export default function Home() {
           />
 
           {/* IMAGE OVERLAY */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-black/15 to-transparent md:via-black/5" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#4B0D32]/75 via-[#4B0D32]/35 to-transparent md:via-[#4B0D32]/15" />
 
-          
+          <div className="absolute inset-0 bg-gradient-to-t from-[#4B0D32]/35 via-transparent to-[#4B0D32]/10" />
 
           <div className="hb-home-grain absolute inset-0 opacity-20" />
 
