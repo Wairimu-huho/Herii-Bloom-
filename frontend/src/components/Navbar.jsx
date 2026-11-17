@@ -32,11 +32,11 @@ export default function Navbar() {
     `whitespace-nowrap rounded-full border border-[#4B0D32]/55 px-3.5 py-2.5 font-body text-[11px] font-bold tracking-wide text-[#4B0D32] transition-all duration-300 lg:px-4 ${
       isActive
         ? "bg-[#4B0D32] text-[#FBF7F2] shadow-sm"
-        : "bg-[#FBF7F2]/75 hover:bg-[#F8E8ED] hover:border-[#4B0D32]"
+        : "bg-white/55 hover:bg-white/85 hover:border-[#4B0D32]"
     }`;
 
   return (
-    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent shadow-none" : "sticky top-0 z-[100] bg-[#FBF7F2] shadow-[0_8px_24px_-18px_rgba(75,13,50,0.35)]"} w-full px-3 py-3 sm:px-6`}>
+    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent shadow-none" : "sticky top-0 z-[100] bg-gradient-to-r from-[#F8E8ED] via-[#FFF4F7] to-[#F2CDDB] shadow-[0_8px_24px_-18px_rgba(75,13,50,0.25)]"} w-full px-3 py-3 sm:px-6`}>
       <div className="mx-auto w-full max-w-[1440px]">
 
         {/* MAIN NAVBAR */}
