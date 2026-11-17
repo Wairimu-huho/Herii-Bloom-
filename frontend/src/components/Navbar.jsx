@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Search, User, ShoppingBag, Menu, X, Heart, Sparkles } from "lucide-react";
+import { User, ShoppingBag, Menu, X, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import lotus from "../assets/logo/lotus-mark.png";
 
@@ -19,9 +19,9 @@ export default function Navbar() {
   const closeMenu = () => setOpen(false);
 
   return (
-    <header className="absolute inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6 md:pt-5">
-      <div className="mx-auto max-w-7xl">
-        <div className="relative flex min-h-[58px] items-center justify-between gap-3 rounded-full border border-white/70 bg-[#FBF7F2]/88 px-3 py-2 shadow-[0_18px_45px_-30px_rgba(75,13,50,0.65)] backdrop-blur-xl sm:px-4">
+    <header className="absolute inset-x-0 top-0 z-50 flex justify-center px-4 pt-4 sm:px-6 md:pt-5">
+      <div className="w-fit max-w-full">
+        <div className="relative inline-flex min-h-[58px] max-w-full items-center gap-3 rounded-full border border-white/70 bg-[#FBF7F2]/88 px-3 py-2 shadow-[0_18px_45px_-30px_rgba(75,13,50,0.65)] backdrop-blur-xl sm:px-4">
           <Link to="/" onClick={closeMenu} className="flex shrink-0 items-center gap-2" aria-label="Heri Bloom home">
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4B0D32] p-1.5 shadow-sm">
               <img src={lotus} alt="" className="h-full w-full object-contain brightness-0 invert" />
@@ -53,10 +53,7 @@ export default function Navbar() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-1.5 text-[#4B0D32] sm:gap-2">
-            <button type="button" className="hidden h-9 w-9 items-center justify-center rounded-full border border-[#4B0D32]/10 bg-white/55 transition hover:border-[#C2185B] hover:text-[#C2185B] sm:flex" aria-label="Search">
-              <Search size={15} />
-            </button>
+          <div className="flex shrink-0 items-center gap-1.5 text-[#4B0D32] sm:gap-2">
             {user ? (
               <div className="hidden items-center gap-2 font-body text-[11px] sm:flex">
                 <span className="hidden text-[#4B0D32]/60 lg:inline">Hi, {user.name?.split(" ")[0]}</span>

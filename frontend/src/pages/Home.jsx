@@ -13,7 +13,6 @@ import api from "../api/client";
 import heroBox from "../assets/products/home-hero.png";
 import cardBox from "../assets/products/box-card.webp";
 import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 
 const features = [
   { icon: Leaf, label: "Thoughtful", sub: "essentials" },
@@ -108,8 +107,8 @@ export default function Home() {
 
       <Navbar />
       <main>
-        <section className="mx-auto max-w-7xl px-4 pb-8 md:px-8 md:pb-12">
-          <div className="relative min-h-[620px] overflow-hidden rounded-[32px] bg-[#EFD9DD] hb-home-shadow md:min-h-[650px]">
+        <section className="relative min-h-screen w-full overflow-hidden bg-[#EFD9DD]">
+          <div className="relative min-h-screen w-full overflow-hidden bg-[#EFD9DD] hb-home-shadow">
             <div className="hb-home-grain absolute inset-0 opacity-40" />
             <div className="absolute inset-y-0 left-0 z-10 w-full bg-gradient-to-r from-[#4B0D32]/65 via-[#4B0D32]/25 to-transparent md:w-[63%]" />
             <motion.img
@@ -120,7 +119,7 @@ export default function Home() {
               transition={{ duration: 1.1, ease: "easeOut" }}
               className="absolute inset-0 h-full w-full object-cover object-center"
             />
-            <div className="relative z-20 flex min-h-[620px] max-w-xl flex-col justify-end px-7 pb-10 text-[#FBF7F2] md:min-h-[650px] md:px-14 md:pb-16">
+            <div className="relative z-20 flex min-h-screen max-w-xl flex-col justify-end px-7 pb-14 text-[#FBF7F2] md:px-14 md:pb-20">
               <p className="mb-5 flex items-center gap-2 font-body text-[10px] font-semibold uppercase tracking-[.28em] text-[#F8E8ED]"><Sparkles size={14} /> The Heri Bloom ritual</p>
               <h1 className="max-w-lg font-display text-5xl font-bold leading-[.98] tracking-[-.045em] md:text-7xl">Care that feels like a <em className="font-normal text-[#F6B6C8]">ritual.</em></h1>
               <p className="mt-6 max-w-md font-body text-sm font-light leading-7 text-[#FBF7F2]/85 md:text-[15px]">Thoughtful menstrual care and small luxuries, gathered into one beautiful moment made entirely for you.</p>
@@ -182,7 +181,6 @@ export default function Home() {
         </section>
 
       </main>
-      <Footer />
     </div>
   );
 }
