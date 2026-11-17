@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   User,
   ShoppingBag,
@@ -22,19 +22,25 @@ const navLinks = [
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { pathname } = useLocation();
+  const isHome = pathname === "/";
   const [open, setOpen] = useState(false);
 
   const closeMenu = () => setOpen(false);
 
   const navClass = ({ isActive }) =>
     `whitespace-nowrap rounded-full px-3.5 py-2.5 font-body text-[11px] font-bold tracking-wide transition-all duration-300 lg:px-4 ${
-      isActive
-        ? "bg-[#FBF7F2] text-[#4B0D32] shadow-md"
-        : "border border-white/15 bg-[#4B0D32]/85 text-[#FBF7F2] shadow-sm backdrop-blur-md hover:bg-[#6B1747] hover:text-white"
+      isHome
+        ? isActive
+          ? "border border-white/70 bg-white/20 text-white shadow-sm"
+          : "border border-white/35 bg-transparent text-white hover:bg-white/15"
+        : isActive
+          ? "bg-[#F8E8ED] text-[#4B0D32] shadow-sm"
+          : "border border-[#4B0D32]/10 bg-[#4B0D32] text-[#FBF7F2] shadow-sm hover:bg-[#6B1747] hover:text-white"
     }`;
 
   return (
-    <header className="sticky top-0 z-[100] w-full bg-[#FBF7F2] px-3 py-3 shadow-[0_8px_24px_-18px_rgba(75,13,50,0.35)] sm:px-6">
+    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent shadow-none" : "sticky top-0 z-[100] bg-[#FBF7F2] shadow-[0_8px_24px_-18px_rgba(75,13,50,0.35)]"} w-full px-3 py-3 sm:px-6`}>
       <div className="mx-auto w-full max-w-[1440px]">
 
         {/* MAIN NAVBAR */}
@@ -48,7 +54,7 @@ export default function Navbar() {
               onClick={() => setOpen((value) => !value)}
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/50 bg-[#4B0D32]/85 text-[#FBF7F2] shadow-sm backdrop-blur-md transition hover:bg-[#6B1747]"
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-[#FBF7F2] shadow-sm transition ${isHome ? "border-white/60 bg-white/10 hover:bg-white/20" : "border-[#4B0D32]/15 bg-[#4B0D32] hover:bg-[#6B1747]"}`}
             >
               {open ? <X size={17} /> : <Menu size={17} />}
             </button>
@@ -59,7 +65,7 @@ export default function Navbar() {
               aria-label="Heri Bloom home"
               className="flex shrink-0 items-center gap-2"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4B0D32] p-1.5 shadow-md ring-1 ring-white/40">
+              <span className={`flex h-9 w-9 items-center justify-center rounded-full p-1.5 shadow-md ring-1 ring-white/40 ${isHome ? "bg-white/15" : "bg-[#4B0D32]"}`}>
                 <img
                   src={lotus}
                   alt=""
@@ -68,12 +74,12 @@ export default function Navbar() {
               </span>
 
               <span className="hidden flex-col leading-none sm:flex">
-                <span className="whitespace-nowrap font-display text-[19px] font-bold tracking-[-.04em] text-[#4B0D32]">
+                <span className={`whitespace-nowrap font-display text-[19px] font-bold tracking-[-.04em] ${isHome ? "text-white" : "text-[#4B0D32]"}`}>
                   Heri Bloom
                 </span>
 
-                <span className="mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] text-[#4B0D32]">
-                  <span className="h-px w-3 bg-[#FBF7F2]/80" />
+                <span className={`mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] ${isHome ? "text-white" : "text-[#4B0D32]"}`}>
+                  <span className={`h-px w-3 ${isHome ? "bg-white/80" : "bg-[#4B0D32]/50"}`} />
                   THE RITUAL BOX
                   <span className="h-px w-3 bg-[#FBF7F2]/80" />
                 </span>
@@ -104,7 +110,7 @@ export default function Navbar() {
             {user ? (
               <div className="hidden items-center gap-2 font-body text-[11px] lg:flex">
 
-                <span className="font-bold text-[#4B0D32]">
+                <span className={`font-bold ${isHome ? "text-white" : "text-[#4B0D32]"}`}>
                   Hi, {user.name?.split(" ")[0]}
                 </span>
 
@@ -120,7 +126,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={logout}
-                  className="font-bold text-[#4B0D32] transition hover:text-[#C2185B]"
+                  className={`font-bold transition hover:text-[#F6B6C8] ${isHome ? "text-white" : "text-[#4B0D32]"}`}
                 >
                   Log out
                 </button>
@@ -129,7 +135,7 @@ export default function Navbar() {
               <Link
                 to="/login"
                 aria-label="Log in"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-[#4B0D32]/90 text-[#FBF7F2] shadow-sm transition hover:bg-[#6B1747]"
+                className={`flex h-9 w-9 items-center justify-center rounded-full border text-[#FBF7F2] shadow-sm transition ${isHome ? "border-white/60 bg-white/10 hover:bg-white/20" : "border-[#4B0D32]/15 bg-[#4B0D32] hover:bg-[#6B1747]"}`}
               >
                 <User size={15} />
               </Link>
@@ -138,7 +144,7 @@ export default function Navbar() {
             <Link
               to="/shop"
               aria-label="Shopping bag"
-              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-[#4B0D32]/90 text-[#FBF7F2] shadow-sm transition hover:bg-[#6B1747]"
+              className={`relative flex h-9 w-9 items-center justify-center rounded-full border text-[#FBF7F2] shadow-sm transition ${isHome ? "border-white/60 bg-white/10 hover:bg-white/20" : "border-[#4B0D32]/15 bg-[#4B0D32] hover:bg-[#6B1747]"}`}
             >
               <ShoppingBag size={15} />
 
