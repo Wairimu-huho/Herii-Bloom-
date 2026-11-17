@@ -4,17 +4,16 @@ import { motion } from "framer-motion";
 import {
   ArrowRight,
   Check,
-  ChevronRight,
   Flower2,
   Heart,
   Leaf,
-  Menu,
   Sparkles,
-  Star,
 } from "lucide-react";
 import api from "../api/client";
 import heroBox from "../assets/products/home-hero.png";
 import cardBox from "../assets/products/box-card.webp";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const features = [
   { icon: Leaf, label: "Thoughtful", sub: "essentials" },
@@ -90,7 +89,6 @@ function Reveal({ children, delay = 0, className = "" }) {
 export default function Home() {
   const [boxes, setBoxes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     api
@@ -108,33 +106,7 @@ export default function Home() {
         .hb-home-soft{box-shadow:0 22px 55px -34px rgba(75,13,50,.34)}
       `}</style>
 
-      <header className="relative z-40 mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-8">
-        <Link to="/" className="font-display text-xl font-bold tracking-[-.04em] text-[#4B0D32]">
-          Heri <span className="text-[#C2185B]">Bloom</span>
-        </Link>
-        <nav className="hidden items-center gap-8 font-body text-xs uppercase tracking-[.16em] text-[#4B0D32]/70 md:flex">
-          <Link className="transition hover:text-[#C2185B]" to="/">Home</Link>
-          <Link className="transition hover:text-[#C2185B]" to="/shop">Shop</Link>
-          <Link className="transition hover:text-[#C2185B]" to="/self-care">Self-care</Link>
-          <Link className="transition hover:text-[#C2185B]" to="/about">Our story</Link>
-        </nav>
-        <div className="flex items-center gap-3">
-          <Link to="/shop" className="hidden rounded-full bg-[#4B0D32] px-5 py-2.5 font-body text-xs font-semibold text-[#FBF7F2] transition hover:bg-[#C2185B] sm:inline-flex">
-            Build your box
-          </Link>
-          <button type="button" onClick={() => setMenuOpen((open) => !open)} className="rounded-full border border-[#4B0D32]/10 p-2.5 md:hidden" aria-label="Open navigation">
-            <Menu size={18} />
-          </button>
-        </div>
-        {menuOpen && (
-          <nav className="absolute right-5 top-16 flex w-48 flex-col gap-1 rounded-2xl border border-[#4B0D32]/10 bg-[#FBF7F2] p-3 font-body text-sm shadow-xl md:hidden">
-            {[['Home', '/'], ['Shop', '/shop'], ['Self-care', '/self-care'], ['Our story', '/about']].map(([label, path]) => (
-              <Link key={path} onClick={() => setMenuOpen(false)} to={path} className="rounded-xl px-3 py-2.5 hover:bg-[#F8E8ED]">{label}</Link>
-            ))}
-          </nav>
-        )}
-      </header>
-
+      <Navbar />
       <main>
         <section className="mx-auto max-w-7xl px-4 pb-8 md:px-8 md:pb-12">
           <div className="relative min-h-[620px] overflow-hidden rounded-[32px] bg-[#EFD9DD] hb-home-shadow md:min-h-[650px]">
@@ -209,8 +181,8 @@ export default function Home() {
           </Reveal>
         </section>
 
-        <section className="border-t border-[#4B0D32]/10 px-5 py-12 md:px-8"><div className="mx-auto flex max-w-7xl flex-col gap-8 md:flex-row md:items-end md:justify-between"><div><Link to="/" className="font-display text-2xl font-bold">Heri <span className="text-[#C2185B]">Bloom</span></Link><p className="mt-3 max-w-xs font-body text-xs leading-6 text-[#4B0D32]/60">Thoughtful care, beautiful rituals, and real support for every kind of day.</p></div><div className="flex flex-wrap gap-x-7 gap-y-3 font-body text-xs text-[#4B0D32]/65"><Link to="/shop" className="hover:text-[#C2185B]">Shop</Link><Link to="/self-care" className="hover:text-[#C2185B]">Self-care</Link><Link to="/about" className="hover:text-[#C2185B]">Our story</Link><Link to="/contact" className="hover:text-[#C2185B]">Contact</Link></div><div className="flex items-center gap-1 text-[#C2185B]">{[1, 2, 3, 4, 5].map((star) => <Star key={star} size={13} fill="currentColor" />)}<span className="ml-2 font-body text-[10px] text-[#4B0D32]/55">Made with care</span></div></div></section>
       </main>
+      <Footer />
     </div>
   );
 }

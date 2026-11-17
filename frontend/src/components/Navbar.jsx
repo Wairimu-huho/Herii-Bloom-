@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Search, User, ShoppingBag, Menu, X, Heart } from "lucide-react";
+import { Search, User, ShoppingBag, Menu, X, Heart, Sparkles } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import lotus from "../assets/logo/lotus-mark.png";
 
@@ -16,113 +16,93 @@ const navLinks = [
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
-
   const closeMenu = () => setOpen(false);
 
   return (
-    <header className="border-b border-hairline bg-cream/95 backdrop-blur sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link to="/" onClick={closeMenu} className="flex items-center gap-2.5" aria-label="Heri Bloom home">
-          <img src={lotus} alt="" className="h-11 w-auto" />
-          <span className="flex flex-col items-center leading-none">
-            <span className="font-display font-bold text-[26px] text-ink">Heri Bloom</span>
-            <span className="flex items-center gap-1.5 mt-1.5 w-full">
-              <span className="h-px flex-1 bg-brand/60" />
-              <span className="font-body text-[8px] tracking-[0.28em] text-brand whitespace-nowrap">
-                THE RITUAL BOX
+    <header className="absolute inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6 md:pt-5">
+      <div className="mx-auto max-w-7xl">
+        <div className="relative flex min-h-[58px] items-center justify-between gap-3 rounded-full border border-white/70 bg-[#FBF7F2]/88 px-3 py-2 shadow-[0_18px_45px_-30px_rgba(75,13,50,0.65)] backdrop-blur-xl sm:px-4">
+          <Link to="/" onClick={closeMenu} className="flex shrink-0 items-center gap-2" aria-label="Heri Bloom home">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4B0D32] p-1.5 shadow-sm">
+              <img src={lotus} alt="" className="h-full w-full object-contain brightness-0 invert" />
+            </span>
+            <span className="hidden flex-col leading-none sm:flex">
+              <span className="font-display text-[19px] font-bold tracking-[-.04em] text-[#4B0D32]">Heri Bloom</span>
+              <span className="mt-1 flex items-center gap-1 font-body text-[7px] font-semibold tracking-[.2em] text-[#C2185B]">
+                <span className="h-px w-3 bg-[#C2185B]/50" /> THE RITUAL BOX <span className="h-px w-3 bg-[#C2185B]/50" />
               </span>
-              <span className="h-px flex-1 bg-brand/60" />
             </span>
-            <Heart size={8} className="text-brand mt-1" fill="currentColor" />
-          </span>
-        </Link>
+          </Link>
 
-        {/* Desktop navigation */}
-        <nav className="hidden md:flex items-center gap-8 font-body text-sm text-ink">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) =>
-                isActive
-                  ? "text-brand relative after:content-[''] after:absolute after:-bottom-6 after:left-0 after:right-0 after:h-0.5 after:bg-brand"
-                  : "hover:text-brand transition-colors"
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
+          <nav aria-label="Main navigation" className="hidden items-center gap-1 rounded-full bg-white/55 p-1 md:flex">
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.to === "/"}
+                className={({ isActive }) =>
+                  `rounded-full px-3.5 py-2 font-body text-[11px] font-medium transition-all lg:px-4 ${
+                    isActive
+                      ? "bg-[#4B0D32] text-[#FBF7F2] shadow-sm"
+                      : "text-[#4B0D32]/70 hover:bg-[#F8E8ED] hover:text-[#4B0D32]"
+                  }`
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
 
-        <div className="flex items-center gap-5 text-ink">
-          <Search size={19} className="hidden sm:block hover:text-brand transition-colors cursor-pointer" />
-
-          {user ? (
-            <div className="hidden sm:flex items-center gap-3 font-body text-sm">
-              <span className="text-ink-soft">Hi, {user.name?.split(" ")[0]}</span>
-              {user.role === "admin" && <Link to="/admin" className="text-brand hover:text-brand-dark transition-colors">Admin</Link>}
-              <button onClick={logout} className="hover:text-brand transition-colors">
-                Log out
-              </button>
-            </div>
-          ) : (
-            <Link to="/login" aria-label="Log in">
-              <User size={19} className="hover:text-brand transition-colors" />
-            </Link>
-          )}
-
-          <div className="relative">
-            <ShoppingBag size={19} className="hover:text-brand transition-colors cursor-pointer" />
-            <span className="absolute -top-2 -right-2 bg-brand text-cream text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
-              0
-            </span>
-          </div>
-
-          <button
-            className="md:hidden"
-            onClick={() => setOpen((v) => !v)}
-            aria-label={open ? "Close menu" : "Open menu"}
-          >
-            {open ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      {open && (
-        <nav className="md:hidden border-t border-hairline bg-cream px-6 py-4 flex flex-col gap-1 font-body text-sm text-ink">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              onClick={closeMenu}
-              className={({ isActive }) =>
-                `py-3 border-b border-hairline/60 ${isActive ? "text-brand" : ""}`
-              }
-            >
-              {link.label}
-            </NavLink>
-          ))}
-          {user ? (
-            <>
-            {user.role === "admin" && <Link to="/admin" onClick={closeMenu} className="py-3 text-brand">Admin dashboard</Link>}
-            <button
-              onClick={() => {
-                logout();
-                closeMenu();
-              }}
-              className="py-3 text-left text-brand"
-            >
-              Log out ({user.name?.split(" ")[0]})
+          <div className="flex items-center gap-1.5 text-[#4B0D32] sm:gap-2">
+            <button type="button" className="hidden h-9 w-9 items-center justify-center rounded-full border border-[#4B0D32]/10 bg-white/55 transition hover:border-[#C2185B] hover:text-[#C2185B] sm:flex" aria-label="Search">
+              <Search size={15} />
             </button>
-            </>
-          ) : (
-            <Link to="/login" onClick={closeMenu} className="py-3 text-brand">
-              Log in
+            {user ? (
+              <div className="hidden items-center gap-2 font-body text-[11px] sm:flex">
+                <span className="hidden text-[#4B0D32]/60 lg:inline">Hi, {user.name?.split(" ")[0]}</span>
+                {user.role === "admin" && <Link to="/admin" className="font-semibold text-[#C2185B] hover:text-[#4B0D32]">Admin</Link>}
+                <button type="button" onClick={logout} className="text-[#4B0D32]/70 hover:text-[#C2185B]">Log out</button>
+              </div>
+            ) : (
+              <Link to="/login" className="flex h-9 w-9 items-center justify-center rounded-full border border-[#4B0D32]/10 bg-white/55 transition hover:border-[#C2185B] hover:text-[#C2185B]" aria-label="Log in">
+                <User size={15} />
+              </Link>
+            )}
+            <Link to="/shop" className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[#F8E8ED] transition hover:bg-[#C2185B] hover:text-[#FBF7F2]" aria-label="Shopping bag">
+              <ShoppingBag size={15} />
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#C2185B] px-1 font-body text-[9px] font-semibold text-[#FBF7F2]">0</span>
             </Link>
-          )}
-        </nav>
-      )}
+            <button type="button" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4B0D32] text-[#FBF7F2] md:hidden" onClick={() => setOpen((value) => !value)} aria-label={open ? "Close menu" : "Open menu"}>
+              {open ? <X size={17} /> : <Menu size={17} />}
+            </button>
+          </div>
+        </div>
+
+        {open && (
+          <nav aria-label="Mobile navigation" className="mt-2 rounded-3xl border border-white/70 bg-[#FBF7F2]/95 p-3 font-body text-sm shadow-xl backdrop-blur-xl md:hidden">
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.to === "/"}
+                onClick={closeMenu}
+                className={({ isActive }) => `flex items-center justify-between rounded-2xl px-4 py-3 transition ${isActive ? "bg-[#4B0D32] text-[#FBF7F2]" : "text-[#4B0D32] hover:bg-[#F8E8ED]"}`}
+              >
+                <span>{link.label}</span>
+                {link.to === "/" && <Sparkles size={13} />}
+              </NavLink>
+            ))}
+            {user ? (
+              <>
+                {user.role === "admin" && <Link to="/admin" onClick={closeMenu} className="mt-1 block rounded-2xl px-4 py-3 text-[#C2185B] hover:bg-[#F8E8ED]">Admin dashboard</Link>}
+                <button type="button" onClick={() => { logout(); closeMenu(); }} className="block w-full rounded-2xl px-4 py-3 text-left text-[#C2185B] hover:bg-[#F8E8ED]">Log out ({user.name?.split(" ")[0]})</button>
+              </>
+            ) : (
+              <Link to="/login" onClick={closeMenu} className="mt-1 block rounded-2xl px-4 py-3 text-[#C2185B] hover:bg-[#F8E8ED]">Log in</Link>
+            )}
+          </nav>
+        )}
+      </div>
     </header>
   );
 }
