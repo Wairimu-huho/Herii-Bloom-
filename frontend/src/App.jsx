@@ -29,7 +29,7 @@ function ScrollRestoration() {
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-blush overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-blush overflow-x-clip">
       <Toaster
         position="top-center"
         toastOptions={{
