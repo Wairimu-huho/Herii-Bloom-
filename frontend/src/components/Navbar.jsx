@@ -61,7 +61,7 @@ export default function Navbar() {
               aria-label="Heri Bloom home"
               className="flex shrink-0 items-center gap-2"
             >
-              <span className={`flex h-9 w-9 items-center justify-center rounded-full p-1.5 ${isHome ? "bg-white/20" : "bg-transparent"}`}>
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-transparent p-1.5">
                 <img
                   src={lotus}
                   alt=""
