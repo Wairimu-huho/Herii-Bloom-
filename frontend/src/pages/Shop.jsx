@@ -113,6 +113,26 @@ const STYLES = `
 .hb-giftcard p.msg{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:400;font-size:1.05rem;line-height:1.6;overflow-wrap:anywhere}
 .hb-skel{background:linear-gradient(90deg,rgba(251,247,242,.5),rgba(251,247,242,.95),rgba(251,247,242,.5));background-size:200% 100%;animation:hbShimmer 1.6s linear infinite}
 @keyframes hbShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+/* Swipeable product and box cards on phones; balanced grids on larger screens. */
+.hb-box-rail,.hb-product-rail,.hb-addon-rail{display:grid;gap:1rem;min-width:0}
+.hb-box-card,.hb-product-card,.hb-addon-card{min-width:0}
+@media(max-width:639px){
+  .hb-box-rail,.hb-product-rail,.hb-addon-rail{display:flex;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:1rem;padding:0 .15rem 1rem; margin-right:-.25rem; scrollbar-width:thin}
+  .hb-box-card,.hb-product-card,.hb-addon-card{flex:0 0 88%;scroll-snap-align:start}
+  .hb-box-card>button:first-child{display:flex;min-height:220px}
+  .hb-box-image{width:38%;height:auto!important;min-height:220px;flex-shrink:0}
+  .hb-box-copy{min-width:0;flex:1;padding:1rem}
+  .hb-box-card .hb-box-action{padding:0 1rem 1rem}
+  .hb-product-card,.hb-addon-card{display:flex;flex-direction:row;min-height:168px}
+  .hb-product-card .hb-product-image,.hb-addon-card .hb-addon-image{width:38%;min-height:168px;aspect-ratio:auto;flex-shrink:0}
+  .hb-product-card .hb-product-copy,.hb-addon-card .hb-addon-copy{min-width:0;flex:1;padding:.9rem}
+}
+@media(min-width:640px) and (max-width:1023px){
+  .hb-box-rail,.hb-product-rail,.hb-addon-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:1024px){
+  .hb-box-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media (prefers-reduced-motion:reduce){.hb *{animation:none!important;transition:none!important}}
 `;
 
@@ -243,7 +263,7 @@ function ProductCard({ product, count, repeat, onToggle, onAdd, onRemove, onZoom
   const low = product.inventory != null && product.inventory > 0 && product.inventory <= 5;
   const atLimit = product.inventory != null && count >= product.inventory;
   return (
-    <div className="hb-card flex flex-col overflow-hidden" data-selected={selected}>
+    <div className="hb-card hb-product-card flex flex-col overflow-hidden" data-selected={selected}>
       <div className="relative aspect-square bg-white">
         {photo ? <img src={photo.url} alt={photo.alt || product.name} loading="lazy" className="h-full w-full object-contain p-2" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
         {photo && <button type="button" className="hb-icon-btn absolute right-2 top-2" aria-label={`View ${product.name} larger`} onClick={() => onZoom(photo)}><Maximize2 size={15} /></button>}
@@ -691,14 +711,14 @@ export default function Shop() {
   const renderBoxStep = () => (
     <>
       <StepHead title="Choose your box" hint="Tap a box to see its photos and details, then choose the one that feels right." />
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="hb-box-rail">
         {boxes.map((b) => {
           const photo = photosOf(b)[0];
           const on = b._id === boxId;
           return (
-            <div key={b._id} className="hb-card overflow-hidden" data-selected={on}>
+            <div key={b._id} className="hb-card hb-box-card overflow-hidden" data-selected={on}>
               <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="block w-full text-left">
-                <div className="relative h-64 bg-white sm:h-72 lg:h-80">
+                <div className="hb-box-image relative h-64 bg-white sm:h-72 lg:h-80">
                   <img src={photo?.url || cardBox} alt={photo?.alt || b.name} loading="lazy" className="h-full w-full object-contain p-3" />
                   {b.mostPopular && <span className="hb-ribbon">Most loved</span>}
                 </div>
@@ -718,7 +738,7 @@ export default function Shop() {
                   {on && reviewSummary.count > 0 && <p className="hb-muted mt-2 text-xs">Rated {reviewSummary.average} out of 5 by {reviewSummary.count} customer{reviewSummary.count === 1 ? "" : "s"}</p>}
                 </div>
               </button>
-              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="flex min-h-14 w-full items-center justify-between px-6 pb-5 text-left">
+              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="hb-box-action flex min-h-14 w-full items-center justify-between px-6 pb-5 text-left">
                 <span className="text-sm font-medium text-[#C2185B]">View photos and details</span>
                 {on && <span className="flex items-center gap-1 text-xs font-medium text-[#C2185B]"><Check size={14} /> Current choice</span>}
               </button>
@@ -766,7 +786,7 @@ export default function Shop() {
         <>
           <button type="button" className="hb-link mb-3 -ml-1 inline-flex items-center gap-1" onClick={() => setActiveCategory(null)}><ArrowLeft size={14} /> All categories</button>
           <StepHead title={labelOf(activeDefinition)} hint={`${ruleText(activeDefinition)} ${progressText(activeDefinition, n)}.`} />
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(11rem,1fr))]">
+          <div className="hb-product-rail">
             {list.map((p) => (
               <ProductCard key={p._id} product={p} count={countOf(activeDefinition, p._id)} repeat={isRepeat(activeDefinition)} onZoom={setLightbox}
                 onToggle={() => toggleChoice(activeDefinition, p._id)} onAdd={() => choose(activeDefinition, p._id)} onRemove={() => unpick(activeDefinition, p._id)} />
@@ -825,13 +845,13 @@ export default function Shop() {
       </BackBar>
       <StepHead title="Add ons" hint="A little extra for your ritual. Tap an add on to see its photos and details. Add it to your box, or buy it separately." />
       {!addonProducts.length && <p className="hb-muted text-sm">No add ons are available right now. You can continue.</p>}
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))]">
+      <div className="hb-addon-rail">
         {addonProducts.map((p) => {
           const n = addonDefinition ? countOf(addonDefinition, p._id) : 0;
           const photo = photosOf(p)[0];
           const atLimit = p.inventory != null && n >= p.inventory;
           return (
-            <div key={p._id} className="hb-card flex flex-col overflow-hidden" data-selected={n > 0}>
+            <div key={p._id} className="hb-card hb-addon-card flex flex-col overflow-hidden" data-selected={n > 0}>
               <div className="relative aspect-square bg-white">
                 <button type="button" aria-haspopup="dialog" aria-label={`View ${p.name} details`} className="block h-full w-full" onClick={() => { setAddonModal(p); setAddonImage(0); }}>
                   {photo ? <img src={photo.url} alt={photo.alt || p.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
