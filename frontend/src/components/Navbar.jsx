@@ -66,7 +66,7 @@ export default function Navbar() {
                   aria-hidden="true"
                   className="h-full w-full"
                   style={{
-                    background: "linear-gradient(to bottom, #FF2D95 0%, #FF2D95 48%, #4B0D32 52%, #4B0D32 100%)",
+                    background: "linear-gradient(to right, #FF2D95 0%, #FF2D95 49.5%, #4B0D32 50.5%, #4B0D32 100%)",
                     WebkitMaskImage: `url(${lotus})`,
                     maskImage: `url(${lotus})`,
                     WebkitMaskRepeat: "no-repeat",
@@ -84,10 +84,10 @@ export default function Navbar() {
                   <span className={isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}>Heri </span><span className={isHome ? "text-[#FF2D95]" : "text-[#C2185B]"}>Bloom</span>
                 </span>
 
-                <span className={`mt-1 flex items-center gap-1 font-body text-[8px] font-extrabold tracking-[.18em] ${isHome ? "text-[#FF2D95]" : "text-[#4B0D32]"}`}>
-                  <span className={`h-px w-3 ${isHome ? "bg-[#FF2D95]" : "bg-[#4B0D32]/50"}`} />
+                <span className={`mt-1 flex items-center gap-1 font-body text-[8px] font-extrabold tracking-[.18em] ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}>
+                  <span className={`h-px w-3 ${isHome ? "bg-[#4B0D32]" : "bg-[#4B0D32]/50"}`} />
                   THE RITUAL BOX
-                  <span className={`h-px w-3 ${isHome ? "bg-[#FFD6E3]" : "bg-[#4B0D32]/50"}`} />
+                  <span className={`h-px w-3 ${isHome ? "bg-[#4B0D32]" : "bg-[#4B0D32]/50"}`} />
                 </span>
               </span>
             </Link>
