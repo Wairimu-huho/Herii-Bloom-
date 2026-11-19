@@ -642,7 +642,7 @@ export default function Home() {
 
         <section
           id="ritual-boxes"
-          className="hb-home-section bg-[#FBF7F2] px-5 py-20 md:px-8 md:py-28"
+          className="hb-home-section bg-[#FBF7F2] px-6 py-24 md:px-12 md:py-28 lg:px-16"
         >
 
           <div className="w-full">
