@@ -167,7 +167,7 @@ function Modal({ open, onClose, label, variant = "center", children }) {
   if (!open) return null;
   const [wrap, panel] = MODAL[variant];
   return (
-    <div className={`fixed inset-0 z-[70] flex ${wrap}`}>
+    <div className={`fixed inset-0 z-[120] flex ${wrap}`}>
       <div className="absolute inset-0 bg-[#4B0D32]/50 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
       <div ref={ref} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1} className={`relative outline-none ${variant === "lightbox" ? "" : "hb-sheet"} ${panel}`}>
         {variant !== "right" && <button type="button" className="hb-close" onClick={onClose} aria-label="Close"><X size={20} /></button>}
@@ -935,10 +935,12 @@ export default function Shop() {
       <>
         <BackBar onBack={() => goTo(5)} />
         <StepHead title="Review and pay" hint="One last look. Use Edit to change anything." />
-        <div className="mb-6 grid gap-4 rounded-2xl bg-white p-4 sm:grid-cols-[minmax(150px,0.8fr)_minmax(0,1.2fr)] sm:items-start sm:gap-6 sm:p-5">
-          <div className="flex items-center gap-4 sm:block">
-            <img src={photosOf(box)[0]?.url || cardBox} alt={photosOf(box)[0]?.alt || box?.name || "Your box"} className="h-28 w-28 shrink-0 rounded-xl bg-[#F8E8ED] object-contain sm:h-48 sm:w-full" />
-            <div className="min-w-0 sm:mt-3">
+        <div className="mb-6 grid gap-4 rounded-2xl bg-white p-4 sm:grid-cols-[minmax(230px,0.95fr)_minmax(0,1.05fr)] sm:items-stretch sm:gap-6 sm:p-5">
+          <div className="flex items-center gap-4 sm:flex-col sm:items-stretch">
+            <div className="flex min-h-[150px] flex-1 items-center justify-center overflow-hidden rounded-2xl bg-[#F8E8ED] p-3 sm:min-h-[320px]">
+              <img src={photosOf(box)[0]?.url || cardBox} alt={photosOf(box)[0]?.alt || box?.name || "Your box"} className="h-36 w-full shrink-0 object-contain sm:h-[290px]" />
+            </div>
+            <div className="min-w-0 sm:pt-1">
               <p className="hb-muted text-xs">Your ritual box</p>
               <h3 className="font-display text-2xl sm:text-3xl">{box?.name}</h3>
               <p className="hb-muted mt-1 text-sm">{purchaseType === "three_month" ? "Three month plan" : "One time purchase"}</p>
@@ -950,15 +952,15 @@ export default function Shop() {
               <h4 className="font-display text-xl">Inside your box</h4>
               <button type="button" className="hb-link" onClick={() => { setWizardStep(3); setActiveCategory(null); }}>Edit products</button>
             </div>
-            <div className="mt-3 space-y-3 text-sm">
+            <div className="mt-2 space-y-2 text-sm">
               {groupedByCategory.length ? groupedByCategory.map(({ d, ids }) => (
-                <div key={d.key}>
-                  <p className="font-medium text-[#4B0D32]">{labelOf(d)}</p>
-                  <p className="hb-muted mt-0.5 leading-5">{[...new Set(ids)].map((id) => `${byId[id]?.name || "Item"}${ids.filter((x) => x === id).length > 1 ? ` x${ids.filter((x) => x === id).length}` : ""}`).join(", ")}</p>
+                <div key={d.key} className="border-b border-[#4B0D32]/[0.07] pb-2 last:border-0 last:pb-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#4B0D32]/75">{labelOf(d)}</p>
+                  <p className="hb-muted mt-0.5 leading-5">{[...new Set(ids)].map((id) => `${byId[id]?.name || "Item"}${ids.filter((x) => x === id).length > 1 ? ` ×${ids.filter((x) => x === id).length}` : ""}`).join(" · ")}</p>
                 </div>
               )) : <p className="hb-muted">No products chosen yet.</p>}
-              {includedProducts.length > 0 && <div><p className="font-medium text-[#4B0D32]">Always included</p><p className="hb-muted mt-0.5 leading-5">{includedProducts.map((p) => p.name).join(", ")}</p></div>}
-              {addonIds.length > 0 && <div><p className="font-medium text-[#4B0D32]">Add ons</p><p className="hb-muted mt-0.5 leading-5">{[...new Set(addonIds)].map((id) => `${byId[id]?.name || "Item"}${addonIds.filter((x) => x === id).length > 1 ? ` x${addonIds.filter((x) => x === id).length}` : ""}`).join(", ")}</p></div>}
+              {includedProducts.length > 0 && <div className="border-b border-[#4B0D32]/[0.07] pb-2"><p className="text-xs font-semibold uppercase tracking-wide text-[#4B0D32]/75">Always included</p><p className="hb-muted mt-0.5 leading-5">{includedProducts.map((p) => p.name).join(" · ")}</p></div>}
+              {addonIds.length > 0 && <div><p className="text-xs font-semibold uppercase tracking-wide text-[#4B0D32]/75">Add ons</p><p className="hb-muted mt-0.5 leading-5">{[...new Set(addonIds)].map((id) => `${byId[id]?.name || "Item"}${addonIds.filter((x) => x === id).length > 1 ? ` ×${addonIds.filter((x) => x === id).length}` : ""}`).join(" · ")}</p></div>}
             </div>
           </div>
         </div>
