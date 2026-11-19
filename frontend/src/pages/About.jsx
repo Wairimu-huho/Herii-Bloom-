@@ -54,8 +54,8 @@ export default function About() {
       <section className="bg-[#F3D5E0] overflow-hidden">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 md:py-28 grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center">
           <div className="relative z-10">
-            <p className="font-body text-xs tracking-[0.24em] text-brand mb-5">{about.eyebrow}</p>
-            <h1 className="font-display font-normal text-5xl sm:text-6xl md:text-7xl leading-[0.94] text-ink">{about.title}</h1>
+            <p className="font-body text-sm font-bold tracking-[0.2em] text-brand mb-5">{about.eyebrow}</p>
+            <h1 className="font-display font-semibold text-5xl sm:text-6xl md:text-7xl leading-[0.94] text-ink">{about.title}</h1>
             <Divider />
             <p className="font-body font-medium text-base sm:text-lg text-ink leading-8 mt-7 max-w-xl">{about.intro}</p>
           </div>
@@ -70,8 +70,8 @@ export default function About() {
 
       <section className="bg-ink text-cream px-4 sm:px-6 py-16 sm:py-20 md:py-24 text-center">
         <div className="max-w-4xl mx-auto">
-          <p className="font-body text-xs tracking-[0.24em] text-cream/60 mb-5">{about.missionHeading}</p>
-          <blockquote className="font-display italic font-normal text-3xl sm:text-4xl md:text-5xl leading-tight">“{about.mission}”</blockquote>
+          <p className="font-body text-sm font-bold tracking-[0.2em] text-cream/80 mb-5">{about.missionHeading}</p>
+          <blockquote className="font-display italic font-semibold text-3xl sm:text-4xl md:text-5xl leading-tight">“{about.mission}”</blockquote>
           <Divider />
         </div>
       </section>
@@ -82,37 +82,37 @@ export default function About() {
             <img src={cardBox} alt="Heri Bloom ritual box" className="w-full h-full object-cover" />
           </div>
           <div>
-            <p className="font-body text-xs tracking-[0.24em] text-brand mb-4">THE HERI BLOOM APPROACH</p>
-            <h2 className="font-display font-normal text-4xl sm:text-5xl leading-tight text-ink">{about.storyHeading}</h2>
+            <p className="font-body text-sm font-bold tracking-[0.2em] text-brand mb-4">THE HERI BLOOM APPROACH</p>
+            <h2 className="font-display font-semibold text-4xl sm:text-5xl leading-tight text-ink">{about.storyHeading}</h2>
             <p className="font-body font-medium text-sm sm:text-base text-ink leading-8 mt-6">{about.story}</p>
           </div>
         </section>
 
         <section className="mt-20 sm:mt-28">
           <div className="text-center max-w-2xl mx-auto">
-            <p className="font-body text-xs tracking-[0.24em] text-brand mb-4">A GENTLER RITUAL</p>
-            <h2 className="font-display font-normal text-4xl sm:text-5xl text-ink">{about.promiseHeading}</h2>
+            <p className="font-body text-sm font-bold tracking-[0.2em] text-brand mb-4">A GENTLER RITUAL</p>
+            <h2 className="font-display font-semibold text-4xl sm:text-5xl text-ink">{about.promiseHeading}</h2>
             <p className="font-body font-medium text-sm sm:text-base text-ink leading-8 mt-5">{about.promise}</p>
           </div>
           <div className="grid md:grid-cols-3 mt-12 border-y border-hairline">
-            {pillars.map((pillar, index) => <article key={pillar.number} className={`py-8 sm:py-10 md:px-8 ${index > 0 ? "border-t md:border-t-0 md:border-l border-hairline" : ""}`}><p className="font-body text-xs tracking-[0.2em] text-brand mb-5">{pillar.number}</p><h3 className="font-display text-2xl sm:text-3xl text-ink">{pillar.title}</h3><p className="font-body font-medium text-sm text-ink leading-7 mt-4">{pillar.text}</p></article>)}
+            {pillars.map((pillar, index) => <article key={pillar.number} className={`py-8 sm:py-10 md:px-8 ${index > 0 ? "border-t md:border-t-0 md:border-l border-hairline" : ""}`}><p className="font-body text-xs tracking-[0.2em] text-brand mb-5">{pillar.number}</p><h3 className="font-display font-semibold text-2xl sm:text-3xl text-ink">{pillar.title}</h3><p className="font-body font-medium text-sm text-ink leading-7 mt-4">{pillar.text}</p></article>)}
           </div>
         </section>
 
         <section className="mt-20 sm:mt-28 bg-blush-deep border border-hairline rounded-[2rem] px-6 py-10 sm:px-10 md:py-14 grid md:grid-cols-[0.35fr_1fr] gap-7 md:gap-12 items-center">
-          <div><p className="font-body text-xs tracking-[0.24em] text-brand">{about.impactEyebrow}</p><p className="font-display text-7xl sm:text-8xl text-brand mt-3">{about.impactNumber}</p></div>
+          <div><p className="font-body text-sm font-bold tracking-[0.2em] text-brand">{about.impactEyebrow}</p><p className="font-display text-7xl sm:text-8xl text-brand mt-3">{about.impactNumber}</p></div>
           <p className="font-display text-2xl sm:text-3xl md:text-4xl leading-tight text-ink">{about.impactText}</p>
         </section>
 
         <section className="mt-20 sm:mt-28 max-w-3xl mx-auto text-center">
-          <p className="font-body text-xs tracking-[0.24em] text-brand mb-4">A PERSONAL NOTE</p>
-          <h2 className="font-display font-normal text-4xl sm:text-5xl text-ink">{about.founderHeading}</h2>
+          <p className="font-body text-sm font-bold tracking-[0.2em] text-brand mb-4">A PERSONAL NOTE</p>
+          <h2 className="font-display font-semibold text-4xl sm:text-5xl text-ink">{about.founderHeading}</h2>
           <p className="font-body font-medium text-base sm:text-lg text-ink leading-8 mt-6">{about.founderNote}</p>
           <p className="font-script text-3xl text-brand-dark mt-7">{about.founderName}</p>
         </section>
 
         <section className="mt-20 sm:mt-28 bg-ink text-cream rounded-[2rem] px-6 py-12 sm:px-10 md:py-16 text-center">
-          <h2 className="font-display font-normal text-3xl sm:text-4xl">{about.ctaTitle}</h2>
+          <h2 className="font-display font-semibold text-3xl sm:text-4xl">{about.ctaTitle}</h2>
           <p className="font-body font-medium text-sm sm:text-base text-cream/90 leading-7 max-w-2xl mx-auto mt-4">{about.ctaText}</p>
           <Link to="/shop#choose-box" className="inline-flex items-center gap-2 mt-8 rounded-full border border-cream/70 text-cream px-6 py-3 font-body font-semibold text-sm hover:bg-cream hover:text-ink transition-colors">Explore the boxes <ArrowRight size={16} /></Link>
         </section>
