@@ -44,7 +44,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="mt-16 border-t border-[#FBF7F2]/10 bg-[#4B0D32] text-[#FBF7F2]">
+    <footer className="mt-0 border-t border-[#FBF7F2]/10 bg-[#4B0D32] text-[#FBF7F2]">
       <div className="mx-auto max-w-7xl px-5 py-14 sm:px-6 md:py-20 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.35fr_.8fr_.8fr_.9fr] lg:gap-10">
           <div className="max-w-sm">
