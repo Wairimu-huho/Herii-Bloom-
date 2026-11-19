@@ -957,7 +957,7 @@ export default function Community() {
                 <Check size={17} />
               </div>
               <div>
-                <h3 className="font-body text-sm font-semibold text-[#4B0D32]">
+                <h3 className="font-body text-base font-semibold text-[#4B0D32]">
                   A space for kindness
                 </h3>
                 <p className="mt-2 font-body text-sm leading-7 text-[#766775]">
