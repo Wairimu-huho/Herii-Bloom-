@@ -36,7 +36,7 @@ export default function Navbar() {
     }`;
 
   return (
-    <header className={`sticky top-0 z-[100] bg-transparent w-full border-0 px-3 pt-3 sm:px-6 sm:pt-4 ${isHome ? "-mb-[78px]" : ""}`}>
+    <header className={`sticky top-0 z-[100] bg-transparent w-full border-0 px-3 sm:px-6 ${isHome ? "-mb-[78px]" : ""}`}>
       <div className={`mx-auto w-full max-w-[1440px] border-0 px-4 py-2 sm:px-7 lg:px-9 ${isHome ? "bg-transparent shadow-none" : "rounded-full bg-[#F3D5E0] shadow-[0_12px_35px_-24px_rgba(75,13,50,0.5)]"}`}>
 
         {/* MAIN NAVBAR */}
