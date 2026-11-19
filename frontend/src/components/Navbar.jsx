@@ -65,12 +65,12 @@ export default function Navbar() {
                 <img
                   src={lotus}
                   alt=""
-                  className="h-full w-full object-contain" style={{ filter: "brightness(0) invert(1)" }}
+                  className="h-full w-full object-contain" style={{ filter: "brightness(0) saturate(100%) invert(25%) sepia(96%) saturate(7480%) hue-rotate(316deg) brightness(105%) contrast(105%)" }}
                 />
               </span>
 
               <span className="hidden flex-col leading-none sm:flex">
-                <span className={`whitespace-nowrap font-display text-[23px] font-bold tracking-[-.04em] sm:text-[25px] ${isHome ? "text-[#FFF7F2] drop-shadow-[0_2px_8px_rgba(55,8,34,0.55)]" : "text-[#4B0D32]"}`}>
+                <span className={`whitespace-nowrap font-display text-[23px] font-bold tracking-[-.04em] sm:text-[25px] ${isHome ? "text-[#FF2D95] drop-shadow-[0_2px_9px_rgba(55,8,34,0.65)]" : "text-[#4B0D32]"}`}>
                   Heri Bloom
                 </span>
 
