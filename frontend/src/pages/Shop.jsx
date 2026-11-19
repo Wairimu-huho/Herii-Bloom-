@@ -323,6 +323,8 @@ export default function Shop() {
 
   const topRef = useRef(null);
   const firstRender = useRef(true);
+  const categoryCardRefs = useRef({});
+  const categoryReturnRef = useRef(null);
 
   /* ---------- data loading ---------- */
   useEffect(() => {
@@ -409,6 +411,12 @@ export default function Shop() {
   }, [cart]);
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return; }
+    if (wizardStep === 3 && !activeCategory && categoryReturnRef.current) {
+      const key = categoryReturnRef.current;
+      categoryReturnRef.current = null;
+      window.setTimeout(() => categoryCardRefs.current[key]?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+      return;
+    }
     topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [wizardStep, activeCategory, mode]);
 
@@ -496,11 +504,15 @@ export default function Shop() {
     setIssues([]);
     setPicks((p) => { const list = [...(p[def.key] || [])]; const i = list.lastIndexOf(id); if (i >= 0) list.splice(i, 1); return { ...p, [def.key]: list }; });
   };
+  const finishCategory = (def) => {
+    categoryReturnRef.current = def.key;
+    setActiveCategory(null);
+  };
   const choose = (def, id) => {
     const selectedNow = (picks[def.key] || []).length;
     const ok = pick(def, id);
     const reachedMax = def.maxSelections != null && selectedNow + 1 >= def.maxSelections;
-    if (ok && (def.maxSelections === 1 || reachedMax) && def === activeDefinition) window.setTimeout(() => setActiveCategory(null), 380);
+    if (ok && (def.maxSelections === 1 || reachedMax) && def === activeDefinition) window.setTimeout(() => finishCategory(def), 380);
   };
   const toggleChoice = (def, id) => (countOf(def, id) > 0 ? unpick(def, id) : choose(def, id));
 
@@ -746,7 +758,7 @@ export default function Shop() {
             ))}
           </div>
           {!list.length && <p className="hb-muted text-sm">Nothing is available in this category right now.</p>}
-          <button type="button" className="hb-btn mt-6" onClick={() => setActiveCategory(null)}>Done with {labelOf(activeDefinition)}</button>
+          <button type="button" className="hb-btn mt-6" onClick={() => finishCategory(activeDefinition)}>Done with {labelOf(activeDefinition)}</button>
         </>
       );
     }
@@ -762,7 +774,7 @@ export default function Shop() {
             const done = ids.length >= min && ids.length > 0;
             const thumbs = [...new Set(ids)].slice(0, 3);
             return (
-              <button type="button" key={d.key} onClick={() => setActiveCategory(d.key)} className="hb-card flex min-h-[92px] items-center gap-4 p-4 text-left" data-selected={done}>
+              <button type="button" key={d.key} ref={(node) => { if (node) categoryCardRefs.current[d.key] = node; else delete categoryCardRefs.current[d.key]; }} onClick={() => setActiveCategory(d.key)} className="hb-card flex min-h-[92px] items-center gap-4 p-4 text-left" data-selected={done}>
                 <span className="flex w-14 shrink-0 justify-center -space-x-3">
                   {thumbs.length ? thumbs.map((id) => { const ph = photosOf(byId[id])[0]; return <span key={id} className="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-white">{ph ? <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}</span>; }) : <Bloom size={34} className="text-[#C2185B]/50" />}
                 </span>
@@ -920,22 +932,34 @@ export default function Shop() {
       <>
         <BackBar onBack={() => goTo(5)} />
         <StepHead title="Review and pay" hint="One last look. Use Edit to change anything." />
-        <div className="mb-6 flex items-center gap-4 rounded-2xl bg-white p-4 sm:gap-6">
-          <img src={photosOf(box)[0]?.url || cardBox} alt={photosOf(box)[0]?.alt || box?.name || "Your box"} className="h-28 w-28 shrink-0 rounded-xl bg-[#F8E8ED] object-contain sm:h-40 sm:w-40" />
-          <div className="min-w-0">
-            <p className="hb-muted text-xs">Your ritual box</p>
-            <h3 className="font-display text-2xl sm:text-3xl">{box?.name}</h3>
-            <p className="hb-muted mt-1 text-sm">{purchaseType === "three_month" ? "Three month plan" : "One time purchase"}</p>
+        <div className="mb-6 grid gap-4 rounded-2xl bg-white p-4 sm:grid-cols-[minmax(150px,0.8fr)_minmax(0,1.2fr)] sm:items-start sm:gap-6 sm:p-5">
+          <div className="flex items-center gap-4 sm:block">
+            <img src={photosOf(box)[0]?.url || cardBox} alt={photosOf(box)[0]?.alt || box?.name || "Your box"} className="h-28 w-28 shrink-0 rounded-xl bg-[#F8E8ED] object-contain sm:h-48 sm:w-full" />
+            <div className="min-w-0 sm:mt-3">
+              <p className="hb-muted text-xs">Your ritual box</p>
+              <h3 className="font-display text-2xl sm:text-3xl">{box?.name}</h3>
+              <p className="hb-muted mt-1 text-sm">{purchaseType === "three_month" ? "Three month plan" : "One time purchase"}</p>
+              <button type="button" className="hb-link mt-2" onClick={() => goTo(1)}>Edit box</button>
+            </div>
+          </div>
+          <div className="min-w-0 sm:border-l sm:border-[#4B0D32]/10 sm:pl-6">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="font-display text-xl">Inside your box</h4>
+              <button type="button" className="hb-link" onClick={() => { setWizardStep(3); setActiveCategory(null); }}>Edit products</button>
+            </div>
+            <div className="mt-3 space-y-3 text-sm">
+              {groupedByCategory.length ? groupedByCategory.map(({ d, ids }) => (
+                <div key={d.key}>
+                  <p className="font-medium text-[#4B0D32]">{labelOf(d)}</p>
+                  <p className="hb-muted mt-0.5 leading-5">{[...new Set(ids)].map((id) => `${byId[id]?.name || "Item"}${ids.filter((x) => x === id).length > 1 ? ` x${ids.filter((x) => x === id).length}` : ""}`).join(", ")}</p>
+                </div>
+              )) : <p className="hb-muted">No products chosen yet.</p>}
+              {includedProducts.length > 0 && <div><p className="font-medium text-[#4B0D32]">Always included</p><p className="hb-muted mt-0.5 leading-5">{includedProducts.map((p) => p.name).join(", ")}</p></div>}
+              {addonIds.length > 0 && <div><p className="font-medium text-[#4B0D32]">Add ons</p><p className="hb-muted mt-0.5 leading-5">{[...new Set(addonIds)].map((id) => `${byId[id]?.name || "Item"}${addonIds.filter((x) => x === id).length > 1 ? ` x${addonIds.filter((x) => x === id).length}` : ""}`).join(", ")}</p></div>}
+            </div>
           </div>
         </div>
         {renderIssues()}
-        <ReviewRow title="Box and plan" onEdit={() => goTo(1)}>{box?.name}, {purchaseType === "three_month" ? "three month plan" : "one time purchase"}</ReviewRow>
-        <ReviewRow title="Your products" onEdit={() => { setWizardStep(3); setActiveCategory(null); }}>
-          {groupedByCategory.length ? groupedByCategory.map(({ d, ids }) => (
-            <p key={d.key}><span className="font-medium text-[#4B0D32]">{labelOf(d)}:</span> {[...new Set(ids)].map((id) => `${byId[id]?.name || "Item"}${ids.filter((x) => x === id).length > 1 ? ` x${ids.filter((x) => x === id).length}` : ""}`).join(", ")}</p>
-          )) : "No products chosen yet."}
-          {includedProducts.length > 0 && <p>Always included: {includedProducts.map((p) => p.name).join(", ")}</p>}
-        </ReviewRow>
         {addonIds.length > 0 && <ReviewRow title="Add ons" onEdit={() => goTo(4)}>{[...new Set(addonIds)].map((id) => `${byId[id]?.name}${addonIds.filter((x) => x === id).length > 1 ? ` x${addonIds.filter((x) => x === id).length}` : ""}`).join(", ")}</ReviewRow>}
         <ReviewRow title="Delivery" onEdit={() => goTo(5)}>
           <p>{normalizePhone(phone)}</p>
