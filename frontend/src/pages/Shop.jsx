@@ -1,329 +1,167 @@
 import * as React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { useEffect, useMemo, useState, useRef } from "react";
+import { motion } from "framer-motion";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Heart, Lock, Maximize2, Minus, Plus, ShoppingBag, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, CreditCard, Heart, Minus, Plus, X, ShoppingBag, Sparkles } from "lucide-react";
 import api from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import cardBox from "../assets/products/box-card.webp";
 import heroBox from "../assets/products/home-hero.png";
-
-/* ------------------------------------------------------------------ */
-/* Constants and helpers                                               */
-/* ------------------------------------------------------------------ */
 const DRAFT_KEY = "heribloom_shop_draft";
-const VIEW_KEY = "heribloom_shop_view";
-const CART_KEY = "heribloom_cart";
-const PENDING_KEY = "heribloom_pending_cart";
-const IMPACT_LINE = "Every box supports menstrual health education.";
-const STEPS = ["Choose box", "Choose plan", "Your products", "Add ons", "Delivery and gift", "Review and pay"];
+const SHOP_VIEW_KEY = "heribloom_shop_view";
 const CATEGORY_ORDER = ["pads", "tampons", "panty-liners", "liners", "wipes", "tea", "teas", "chocolate", "chocolates", "candle", "candles", "bath-bombs", "bathbombs", "addon", "addons"];
-const CATEGORY_LABELS = { "panty-liners": "Panty Liners", liners: "Panty Liners", chocolate: "Chocolates", chocolates: "Chocolates", tea: "Teas", teas: "Teas", candle: "Candles", candles: "Candles", "bath-bombs": "Bath bombs", bathbombs: "Bath bombs", addon: "Add ons", addons: "Add ons" };
-const COUNTIES = ["Nairobi", "Kiambu", "Kajiado", "Machakos", "Mombasa", "Nakuru", "Kisumu", "Uasin Gishu", "Kilifi", "Nyeri"];
-
-const norm = (v) => String(v || "").toLowerCase().replace(/[^a-z]/g, "");
-const categoryRank = (d) => {
-  const n = norm(d.key || d.name);
-  if (n.includes("bathbomb")) return 11;
-  if (n === "addon" || n === "addons") return 12;
-  const r = CATEGORY_ORDER.indexOf(d.key);
-  return r === -1 ? 999 : r;
+const CATEGORY_LABELS = { "panty-liners": "Panty Liners", liners: "Panty Liners", chocolate: "Chocolates", chocolates: "Chocolates", tea: "Teas", teas: "Teas", candle: "Candles", candles: "Candles", "bath-bombs": "Bath bombs", bathbombs: "Bath bombs", addon: "Add-ons", addons: "Add-ons" };
+const categoryRank = (definition) => {
+  const normalized = String(definition.key || definition.name || "").toLowerCase().replace(/[^a-z]/g, "");
+  if (normalized.includes("bathbomb")) return 11;
+  if (normalized === "addon" || normalized === "addons") return 12;
+  const rank = CATEGORY_ORDER.indexOf(definition.key);
+  return rank === -1 ? 999 : rank;
 };
-const labelOf = (d) => CATEGORY_LABELS[d.key] || d.name || d.key;
 const formatKsh = (n) => `KSh ${Number(n || 0).toLocaleString()}`;
-const readJSON = (store, key, fallback) => { try { return JSON.parse(store.getItem(key)) ?? fallback; } catch { return fallback; } };
-const photosOf = (item) => [...(item?.photos || [])].filter((p) => p.active !== false).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-const toISODate = (d) => new Date(d).toISOString().slice(0, 10);
-const normalizePhone = (v) => {
-  const s = String(v || "").replace(/[\s()-]/g, "");
-  if (/^0[17]\d{8}$/.test(s)) return `+254${s.slice(1)}`;
-  if (/^254[17]\d{8}$/.test(s)) return `+${s}`;
-  return String(v || "").trim();
+const inputClass = "w-full rounded-2xl border border-[#4B0D32]/10 bg-white/70 px-4 py-3.5 font-body text-sm font-light text-[#4B0D32] placeholder:text-[#4B0D32]/40 transition duration-300 focus:border-[#C2185B] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[#C2185B]/10";
+const loadDraft = () => {
+  try {
+    return JSON.parse(sessionStorage.getItem(DRAFT_KEY)) || {};
+  } catch {
+    return {};
+  }
 };
-const ruleText = (d) => {
-  if (d.optionalExtra) return "Optional paid extra.";
-  const min = Number(d.minSelections || 0);
-  const max = d.maxSelections;
-  if (max != null && min === max) return `Choose ${min}.`;
-  return `Choose ${min} to ${max ?? "as many as you like"}.`;
-};
-const progressText = (d, n) => {
-  const min = Number(d.minSelections || 0);
-  if (n < min) return `Choose ${min - n} more`;
-  return n > 0 ? `${n} chosen` : "Optional";
-};
-
-/* ------------------------------------------------------------------ */
-/* Styles: pink page, cream surfaces, plum text, magenta accents       */
-/* ------------------------------------------------------------------ */
 const STYLES = `
 @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap");
-.hb{--plum:#4B0D32;--magenta:#C2185B;--blush:#F8E8ED;--pink:#F3D5E0;--cream:#FBF7F2;--line:rgba(75,13,50,.12);font-family:"Poppins",system-ui,sans-serif;color:var(--plum);background:var(--pink);min-height:100vh}
-.hb .font-display{font-family:"Playfair Display",Georgia,serif;font-weight:600;letter-spacing:-.025em}
+.hb{font-family:"Poppins",system-ui,sans-serif;color:#4B0D32;scroll-behavior:smooth;background:#F3D5E0}
+.hb-wizard-main[data-wizard-step="3"] #products-category-list{display:block}
+.hb-wizard-main[data-wizard-step="3"] [id^="step-"]{display:block}
+.hb-product-category-card{background:rgba(255,255,255,.58);border:1px solid rgba(75,13,50,.09);transition:all .22s ease}
+.hb-product-category-card:hover{border-color:rgba(194,24,91,.38);transform:translateY(-1px);box-shadow:0 10px 24px -22px rgba(75,13,50,.3)}
+.hb-product-category-card[data-complete="true"]{background:rgba(255,255,255,.78);border-color:rgba(194,24,91,.28)}
+.hb .font-display{font-family:"Playfair Display",Georgia,serif;font-weight:600;letter-spacing:-0.035em}
 .hb .font-body{font-family:"Poppins",system-ui,sans-serif}
-.hb ::selection{background:var(--blush);color:var(--plum)}
-.hb :focus-visible{outline:2px solid var(--magenta);outline-offset:3px}
-.hb button{cursor:pointer}
-.hb button:disabled{cursor:not-allowed}
-.hb-muted{color:rgba(75,13,50,.74)}
-.hb-panel{background:var(--cream);border:1px solid var(--line);border-radius:24px;box-shadow:0 30px 70px -48px rgba(75,13,50,.45)}
-.hb-sheet{background:var(--cream);box-shadow:0 30px 80px -30px rgba(75,13,50,.5)}
-.hb-card{background:#fff;border:1px solid var(--line);border-radius:16px;transition:border-color .25s,box-shadow .25s,background .25s}
-.hb-card:hover{border-color:rgba(194,24,91,.45);box-shadow:0 18px 40px -30px rgba(75,13,50,.45)}
-.hb-card[data-selected="true"]{border-color:var(--magenta);background:var(--blush);box-shadow:0 0 0 1px var(--magenta)}
-.hb-input{width:100%;margin-top:.4rem;min-height:48px;border-radius:16px;border:1px solid var(--line);background:#fff;padding:.7rem 1rem;font-size:.9rem;font-weight:300;color:var(--plum);transition:border-color .2s,box-shadow .2s}
-.hb-input::placeholder{color:rgba(75,13,50,.5)}
-.hb-input:focus{outline:none;border-color:var(--magenta);box-shadow:0 0 0 4px rgba(194,24,91,.12)}
-.hb-label{font-size:.8rem;font-weight:500;color:var(--plum)}
-.hb-btn,.hb-btn-outline,.hb-btn-quiet{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:46px;border-radius:999px;padding:.7rem 1.4rem;font-size:.875rem;font-weight:500;transition:background .25s,color .25s,border-color .25s,transform .25s}
-.hb-btn{background:var(--plum);color:var(--cream)}
-.hb-btn:hover:not(:disabled){background:var(--magenta)}
-.hb-btn:disabled{opacity:.4}
-.hb-btn-outline{border:1px solid var(--magenta);color:var(--magenta);background:transparent}
-.hb-btn-outline:hover:not(:disabled){background:var(--magenta);color:#fff}
-.hb-btn-outline:disabled{opacity:.4}
-.hb-btn-quiet{border:1px solid rgba(75,13,50,.22);color:var(--plum);background:transparent}
-.hb-btn-quiet:hover:not(:disabled){border-color:var(--magenta);color:var(--magenta)}
-.hb-btn-quiet:disabled{opacity:.35}
-.hb-link{font-size:.8rem;font-weight:500;color:var(--magenta);text-decoration:underline;text-underline-offset:3px;min-height:44px;padding:0 .25rem}
-.hb-icon-btn{display:flex;height:40px;width:40px;align-items:center;justify-content:center;border-radius:999px;background:rgba(251,247,242,.92);color:var(--plum);box-shadow:0 6px 16px -8px rgba(75,13,50,.5)}
-.hb-close{position:absolute;right:1rem;top:1rem;z-index:5;display:flex;height:44px;width:44px;align-items:center;justify-content:center;border-radius:999px;background:var(--cream);color:var(--plum);box-shadow:0 6px 16px -8px rgba(75,13,50,.5)}
-.hb-badge{display:flex;height:26px;width:26px;align-items:center;justify-content:center;border-radius:999px;background:var(--magenta);color:#fff}
-.hb-ribbon{position:absolute;left:12px;top:12px;border-radius:999px;background:var(--plum);color:var(--cream);padding:.3rem .8rem;font-size:.75rem;font-weight:500}
-.hb-qbtn{display:flex;height:40px;width:40px;align-items:center;justify-content:center;border-radius:999px;border:1px solid var(--magenta);color:var(--magenta);background:transparent}
-.hb-qbtn:disabled{opacity:.35}
-.hb-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.hb-steps{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem;margin:0;padding:0;list-style:none;isolation:isolate}
-.hb-steps:before{content:"";position:absolute;z-index:-1;left:8.33%;right:8.33%;top:1.1rem;height:2px;background:rgba(75,13,50,.2)}
-.hb-step{display:flex;width:100%;flex-direction:column;align-items:center;gap:.4rem;background:none;color:rgba(75,13,50,.78)}
-.hb-step:disabled{opacity:.55}
-.hb-step-dot{display:flex;height:2.2rem;width:2.2rem;align-items:center;justify-content:center;border-radius:999px;border:2px solid rgba(75,13,50,.3);background:var(--pink);font-size:.8rem;font-weight:500}
-.hb-step[aria-current="step"] .hb-step-dot{background:var(--plum);border-color:var(--plum);color:var(--cream);box-shadow:0 0 0 4px rgba(251,247,242,.9)}
-.hb-step[data-done="true"] .hb-step-dot{background:var(--magenta);border-color:var(--magenta);color:#fff}
-.hb-step-label{display:none;font-size:.75rem;font-weight:500;text-align:center;line-height:1.25}
-@media(min-width:768px){.hb-step-label{display:block}}
-.hb-footer{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(251,247,242,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);box-shadow:0 -20px 50px -34px rgba(75,13,50,.55);padding-bottom:env(safe-area-inset-bottom,0px)}
-.hb-giftcard{border-radius:16px;border:1px dashed rgba(194,24,91,.45);background:#fff;padding:1.25rem;text-align:center;color:var(--plum)}
-.hb-giftcard p.msg{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:400;font-size:1.05rem;line-height:1.6;overflow-wrap:anywhere}
-.hb-skel{background:linear-gradient(90deg,rgba(251,247,242,.5),rgba(251,247,242,.95),rgba(251,247,242,.5));background-size:200% 100%;animation:hbShimmer 1.6s linear infinite}
-@keyframes hbShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
-@media (prefers-reduced-motion:reduce){.hb *{animation:none!important;transition:none!important}}
+.hb ::selection{background:#F8E8ED;color:#4B0D32}
+.hb button,.hb a{transition-property:all;transition-duration:300ms}
+.hb-rise{animation:hbRise .8s cubic-bezier(.22,1,.36,1) both}
+.hb-pop{animation:hbPop .4s cubic-bezier(.22,1,.36,1) both}
+.hb-float{animation:hbFloat 7s ease-in-out infinite}
+.hb-checkout-dock{position:fixed!important;left:0!important;right:0!important;bottom:0!important;z-index:1000!important;width:100%!important;box-shadow:0 -20px 55px -28px rgba(75,13,50,.5)}
+.hb-editorial-section{border-radius:12px!important;box-shadow:0 18px 48px -38px rgba(75,13,50,.28)!important}.hb-editorial-card{border-radius:10px!important}
+.hb-shop-progress{scrollbar-width:none}.hb-shop-progress::-webkit-scrollbar{display:none}
+.hb-wizard-steps{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem;isolation:isolate}
+.hb-wizard-steps:before{content:"";position:absolute;z-index:-1;left:8.33%;right:8.33%;top:1.05rem;height:2px;background:rgba(75,13,50,.22)}
+.hb-wizard-step{display:flex;flex-direction:column;align-items:center;gap:.45rem;min-width:0;color:rgba(75,13,50,.72)}
+.hb-wizard-step-circle{display:flex;width:2.1rem;height:2.1rem;align-items:center;justify-content:center;border:2px solid rgba(75,13,50,.3);border-radius:999px;background:#F3D5E0;font:500 .8rem Poppins,sans-serif}
+.hb-wizard-step[aria-current="step"] .hb-wizard-step-circle{background:#4B0D32;color:#FBF7F2;border-color:#4B0D32;box-shadow:0 0 0 4px rgba(243,213,224,.9)}
+.hb-wizard-step[data-complete="true"] .hb-wizard-step-circle{background:#C2185B;color:#fff;border-color:#C2185B}
+.hb-wizard-step-label{font:500 .58rem Poppins,sans-serif;text-align:center;line-height:1.2}
+.hb-wizard-steps+nav{display:none}
+.hb-wizard-main[data-wizard-step] .hb-editorial-section,.hb-wizard-main[data-wizard-step] #included-section{display:none}
+.hb-wizard-main[data-wizard-step="1"] #choose-box,
+.hb-wizard-main[data-wizard-step="2"] #plan-section,
+.hb-wizard-main[data-wizard-step="2"] #included-section,
+.hb-wizard-main[data-wizard-step="3"] [id^="step-"],
+.hb-wizard-main[data-wizard-step="4"] #addons-step,
+.hb-wizard-main[data-wizard-step="5"] #delivery-details,
+.hb-wizard-main[data-wizard-step="5"] #card-message-step,
+.hb-wizard-main[data-wizard-step="6"] #three-month-terms{display:block}
+@media(max-width:640px){.hb-wizard-step-label{font-size:.5rem}.hb-wizard-step-circle{width:1.85rem;height:1.85rem}}
+@keyframes hbRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes hbPop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes hbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@media (prefers-reduced-motion:reduce){.hb-rise,.hb-pop,.hb-float{animation:none}.hb{scroll-behavior:auto}}
 `;
-
-/* ------------------------------------------------------------------ */
-/* Small shared components                                             */
-/* ------------------------------------------------------------------ */
-function Bloom({ size = 44, className = "" }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.2" className={className} aria-hidden="true">
-      {[0, 60, 120, 180, 240, 300].map((a) => <ellipse key={a} cx="24" cy="14" rx="5" ry="9" transform={`rotate(${a} 24 24)`} />)}
-      <circle cx="24" cy="24" r="3" fill="currentColor" />
-    </svg>
-  );
+function LuxuryStepWrapper({ children }) {
+  return /* @__PURE__ */ React.createElement(motion.div, { initial: { opacity: 1, y: 20, scale: 1 }, animate: { opacity: 1, y: 0, scale: 1 }, transition: { type: "spring", stiffness: 100, damping: 18, mass: 0.8 }, className: "origin-center" }, children);
 }
-
-const MODAL = {
-  center: ["items-end justify-center sm:items-center sm:p-6", "w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-[28px] sm:rounded-[28px]"],
-  right: ["justify-end", "flex h-full w-full max-w-md flex-col"],
-  sheet: ["items-end justify-center", "w-full max-h-[85vh] overflow-y-auto rounded-t-[28px]"],
-  lightbox: ["items-center justify-center p-4", "max-w-5xl rounded-2xl"],
-};
-const modalStack = [];
-
-function Modal({ open, onClose, label, variant = "center", children }) {
-  const ref = useRef(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  useEffect(() => {
-    if (!open) return;
-    const token = {};
-    modalStack.push(token);
-    const previous = document.activeElement;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const node = ref.current;
-    const focusables = () => (node ? Array.from(node.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')).filter((el) => !el.disabled) : []);
-    (focusables()[0] || node)?.focus();
-    const onKey = (e) => {
-      if (modalStack[modalStack.length - 1] !== token) return;
-      if (e.key === "Escape") return closeRef.current();
-      if (e.key !== "Tab") return;
-      const f = focusables();
-      if (!f.length) return;
-      const first = f[0];
-      const last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      modalStack.splice(modalStack.indexOf(token), 1);
-      document.body.style.overflow = prevOverflow;
-      previous?.focus?.();
-    };
-  }, [open]);
-  if (!open) return null;
-  const [wrap, panel] = MODAL[variant];
-  return (
-    <div className={`fixed inset-0 z-[70] flex ${wrap}`}>
-      <div className="absolute inset-0 bg-[#4B0D32]/50 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
-      <div ref={ref} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1} className={`relative outline-none ${variant === "lightbox" ? "" : "hb-sheet"} ${panel}`}>
-        <button type="button" className="hb-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
-        {children}
-      </div>
-    </div>
-  );
+function Section({ n, title, hint, id, children, isActive = true, sectionRef }) {
+  return /* @__PURE__ */ React.createElement(LuxuryStepWrapper, { isActive }, /* @__PURE__ */ React.createElement("section", { ref: sectionRef, id, className: "hb-rise scroll-mt-24 hb-editorial-section rounded-[12px] border border-[#4B0D32]/10 bg-white/65 p-6 shadow-sm md:p-10 lg:p-12" }, /* @__PURE__ */ React.createElement("div", { className: "mb-7 flex items-start gap-4" }, /* @__PURE__ */ React.createElement("span", { className: "font-display text-3xl leading-none text-[#C2185B]/60" }, String(n).padStart(2, "0")), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] font-medium uppercase tracking-[0.28em] text-[#C2185B]" }, "Step ", n), /* @__PURE__ */ React.createElement("h2", { className: "font-display text-2xl text-[#4B0D32] md:text-[1.7rem]" }, title), hint && /* @__PURE__ */ React.createElement("p", { className: "mt-1 font-body text-sm font-light text-[#4B0D32]/70" }, hint))), children));
 }
-
-function Stepper({ step, maxStep, onGo }) {
-  return (
-    <ol className="hb-steps" aria-label="Order progress">
-      {STEPS.map((label, i) => {
-        const n = i + 1;
-        const done = n < step;
-        return (
-          <li key={label}>
-            <button type="button" className="hb-step" aria-current={step === n ? "step" : undefined} aria-label={`Step ${n}: ${label}`} data-done={done} disabled={n > maxStep} onClick={() => onGo(n)}>
-              <span className="hb-step-dot">{done ? <Check size={14} /> : n}</span>
-              <span className="hb-step-label">{label}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ol>
-  );
+function Choice({ product, selected, onClick, onImageClick, disabled = false }) {
+  const photos = product.photos?.filter((item) => item.active !== false) || [];
+  const photo = photos[0];
+  return /* @__PURE__ */ React.createElement("button", { type: "button", disabled, onClick, "aria-pressed": selected, className: `group text-left rounded-xl border bg-[#FBF7F2] overflow-hidden transition-all duration-500 hover:-translate-y-1 disabled:opacity-50 ${selected ? "border-[#C2185B] bg-[#F8E8ED] shadow-[0_18px_40px_-20px_rgba(194,24,91,0.45)]" : "border-[#4B0D32]/10 hover:border-[#C2185B]/50 hover:shadow-[0_18px_40px_-24px_rgba(75,13,50,0.4)]"}` }, photo ? /* @__PURE__ */ React.createElement("div", { className: "relative h-52 overflow-hidden bg-white p-1 sm:h-60" }, /* @__PURE__ */ React.createElement("img", { src: photo.url, alt: photo.alt || product.name, className: "w-full h-full rounded-lg object-contain scale-[1.18] transition-transform duration-300 group-hover:scale-[1.24]" })) : /* @__PURE__ */ React.createElement("div", { className: "w-full h-3 bg-[#F8E8ED]" }), photos.length > 1 && /* @__PURE__ */ React.createElement("div", { className: "flex gap-1 px-3 pt-2" }, photos.slice(0, 4).map((item, index) => /* @__PURE__ */ React.createElement("img", { key: `${item.url}-${index}`, src: item.url, alt: "", className: "w-8 h-6 rounded object-cover border border-[#4B0D32]/10 transition-transform duration-200 hover:scale-110" }))), /* @__PURE__ */ React.createElement("div", { className: "px-4 py-3" }, /* @__PURE__ */ React.createElement("span", { className: "flex justify-between gap-2 font-body text-sm text-[#4B0D32]" }, /* @__PURE__ */ React.createElement("span", null, product.name), /* @__PURE__ */ React.createElement("span", { className: `w-5 h-5 rounded-full border flex items-center justify-center ${selected ? "bg-[#C2185B] border-[#C2185B] text-[#FBF7F2]" : "border-[#4B0D32]/10"}` }, selected && /* @__PURE__ */ React.createElement(Check, { size: 12 }))), /* @__PURE__ */ React.createElement("span", { className: "block font-body text-xs text-[#4B0D32]/70 mt-1" }, product.priceModifier > 0 ? `+ ${formatKsh(product.priceModifier)}` : "Included", product.inventory != null ? ` \xB7 ${product.inventory} available` : "")));
 }
-
-const StepHead = ({ title, hint }) => (
-  <div className="mb-7">
-    <h2 className="font-display text-2xl md:text-[2rem]">{title}</h2>
-    {hint && <p className="hb-muted mt-1.5 max-w-xl text-sm leading-6">{hint}</p>}
-  </div>
-);
-const Field = ({ label, hint, className = "", children }) => (
-  <label className={`block ${className}`}>
-    <span className="hb-label">{label}</span>
-    {children}
-    {hint && <span className="hb-muted mt-1 block text-xs">{hint}</span>}
-  </label>
-);
-const TotalRow = ({ label, value, strong, accent }) => (
-  <div className={`flex items-baseline justify-between gap-3 ${strong ? "mt-4 border-t border-[#4B0D32]/10 pt-4" : "mt-2"}`}>
-    <span className={`text-sm ${strong ? "" : "hb-muted"} ${accent ? "text-[#C2185B]" : ""}`}>{label}</span>
-    <span className={strong ? "font-display text-2xl text-[#C2185B]" : `text-sm ${accent ? "text-[#C2185B]" : ""}`}>{value}</span>
-  </div>
-);
-const ReviewRow = ({ title, onEdit, children }) => (
-  <section className="border-t border-[#4B0D32]/10 py-5 first:border-0 first:pt-0">
-    <div className="flex items-center justify-between">
-      <h3 className="text-sm font-semibold">{title}</h3>
-      {onEdit && <button type="button" className="hb-link" onClick={onEdit}>Edit</button>}
-    </div>
-    <div className="hb-muted mt-1 text-sm leading-6">{children}</div>
-  </section>
-);
-
-function ProductCard({ product, count, repeat, onToggle, onAdd, onRemove, onZoom }) {
-  const photo = photosOf(product)[0];
-  const selected = count > 0;
-  const soldOut = product.inventory != null && product.inventory < 1;
-  const low = product.inventory != null && product.inventory > 0 && product.inventory <= 5;
-  const atLimit = product.inventory != null && count >= product.inventory;
-  return (
-    <div className="hb-card flex flex-col overflow-hidden" data-selected={selected}>
-      <div className="relative aspect-square bg-white">
-        {photo ? <img src={photo.url} alt={photo.alt || product.name} loading="lazy" className="h-full w-full object-contain p-2" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
-        {photo && <button type="button" className="hb-icon-btn absolute right-2 top-2" aria-label={`View ${product.name} larger`} onClick={() => onZoom(photo)}><Maximize2 size={15} /></button>}
-        {selected && <span className="hb-badge absolute left-3 top-3" aria-hidden="true"><Check size={14} /></span>}
-      </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
-        <h3 className="text-sm font-medium">{product.name}</h3>
-        {product.description && <p className="hb-muted hb-clamp text-xs leading-5">{product.description}</p>}
-        <p className="text-xs font-medium text-[#C2185B]">{product.priceModifier > 0 ? `+ ${formatKsh(product.priceModifier)}` : "Included"}</p>
-        {low && <p className="text-xs text-[#C2185B]">Only {product.inventory} left</p>}
-        <div className="mt-auto pt-3">
-          {soldOut ? <button type="button" disabled className="hb-btn-quiet w-full">Sold out</button>
-            : repeat && selected ? (
-              <div className="flex items-center justify-center gap-4">
-                <button type="button" className="hb-qbtn" onClick={onRemove} aria-label={`Remove one ${product.name}`}><Minus size={16} /></button>
-                <span className="min-w-6 text-center text-sm font-semibold" aria-live="polite">{count}</span>
-                <button type="button" className="hb-qbtn" onClick={onAdd} disabled={atLimit} aria-label={`Add one more ${product.name}`}><Plus size={16} /></button>
-              </div>
-            ) : (
-              <button type="button" aria-pressed={selected} onClick={repeat ? onAdd : onToggle} className={selected ? "hb-btn w-full" : "hb-btn-outline w-full"}>{selected ? "Selected" : "Choose"}</button>
-            )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Page                                                                */
-/* ------------------------------------------------------------------ */
 export default function Shop() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [draft] = useState(() => readJSON(sessionStorage, DRAFT_KEY, {}));
-  const [view] = useState(() => readJSON(sessionStorage, VIEW_KEY, {}));
-
+  const [draft] = useState(loadDraft);
   const [boxes, setBoxes] = useState([]);
   const [products, setProducts] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [boxReviews, setBoxReviews] = useState([]);
+  const [addonReviews, setAddonReviews] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState({ average: 0, count: 0 });
+  const [addonReviewSummary, setAddonReviewSummary] = useState({ average: 0, count: 0 });
+  const [reviewOption, setReviewOption] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [selectedImage, setSelectedImage] = useState("card");
+  const [zoomPosition, setZoomPosition] = useState(null);
   const [status, setStatus] = useState("loading");
-  const [reloadKey, setReloadKey] = useState(0);
-
-  const [wizardStep, setWizardStep] = useState(Number(view.wizardStep) || 1);
-  const [maxStep, setMaxStep] = useState(Number(view.maxStep) || Number(view.wizardStep) || 1);
-  const [mode, setMode] = useState("box");
-  const [activeCategory, setActiveCategory] = useState(null);
-
+  const [productDrawer, setProductDrawer] = useState(null);
+  const [savedView] = useState(() => { try { return JSON.parse(sessionStorage.getItem(SHOP_VIEW_KEY)) || {}; } catch { return {}; } });
+  const [activeStepIndex, setActiveStepIndex] = useState(Number.isInteger(savedView.activeStepIndex) ? savedView.activeStepIndex : -1);
+  const [wizardStep, setWizardStep] = useState(Number.isInteger(savedView.wizardStep) ? savedView.wizardStep : 1);
+  const sectionRefs = useRef([]);
   const [boxId, setBoxId] = useState(params.get("box") || draft.boxId || "");
   const [picks, setPicks] = useState(draft.picks || {});
   const [purchaseType, setPurchaseType] = useState(draft.purchaseType || "one_time");
   const [firstDeliveryDate, setFirstDeliveryDate] = useState(draft.firstDeliveryDate || "");
   const [phone, setPhone] = useState(draft.phone || "");
   const [address, setAddress] = useState(draft.address || { street: "", city: "", county: "", deliveryNotes: "" });
-  const [discreet, setDiscreet] = useState(Boolean(draft.discreet));
   const [cardMessage, setCardMessage] = useState(draft.cardMessage || "");
   const [gift, setGift] = useState(draft.gift || { isGift: false, recipientName: "", recipientPhone: "" });
   const [notificationPreferences, setNotificationPreferences] = useState({ email: true, whatsapp: false });
-  const [accept, setAccept] = useState(false);
-
+  const [standaloneOnly, setStandaloneOnly] = useState("");
+  const [standaloneQuantity, setStandaloneQuantity] = useState(1);
+  const [addonModal, setAddonModal] = useState(null);
+  const [addonModalQuantity, setAddonModalQuantity] = useState(1);
+  const [addonModalImage, setAddonModalImage] = useState(0);
+  const [addonZoomPosition, setAddonZoomPosition] = useState(null);
+  const [addonLightbox, setAddonLightbox] = useState(null);
   const [boxModal, setBoxModal] = useState(null);
+  const [productLightbox, setProductLightbox] = useState(null);
   const [boxModalImage, setBoxModalImage] = useState(0);
-  const [lightbox, setLightbox] = useState(null);
-  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [boxZoomPosition, setBoxZoomPosition] = useState(null);
+  const [boxLightbox, setBoxLightbox] = useState(null);
+  const [accept, setAccept] = useState(false);
   const [openPolicy, setOpenPolicy] = useState("");
-  const [notice, setNotice] = useState(params.get("payment") === "cancelled" ? "Your payment was cancelled and nothing was charged. Your box is still here whenever you are ready." : "");
+  const [paymentNotice, setPaymentNotice] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [issues, setIssues] = useState([]);
+  const [checkoutIssues, setCheckoutIssues] = useState([]);
   const [confirmation, setConfirmation] = useState(null);
-
-  const [boxReviews, setBoxReviews] = useState([]);
-  const [reviewSummary, setReviewSummary] = useState({ average: 0, count: 0 });
-  const [reviewOption, setReviewOption] = useState(null);
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewText, setReviewText] = useState("");
-
-  const [cart, setCart] = useState(() => readJSON(localStorage, CART_KEY, []));
+  const [cart, setCart] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("heribloom_cart")) || [];
+    } catch {
+      return [];
+    }
+  });
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedCartIds, setSelectedCartIds] = useState(() => new Set());
-
-  const topRef = useRef(null);
-  const firstRender = useRef(true);
-
-  /* ---------- data loading ---------- */
   useEffect(() => {
-    setStatus("loading");
-    Promise.all([api.get("/api/boxes"), api.get("/api/products"), api.get("/api/catalog/settings")])
-      .then(([b, p, s]) => { setBoxes(b.data); setProducts(p.data); setSettings(s.data); setStatus("ready"); })
-      .catch(() => setStatus("error"));
-  }, [reloadKey]);
-
+    const saveView = () => { try { sessionStorage.setItem(SHOP_VIEW_KEY, JSON.stringify({ wizardStep, activeStepIndex, scrollY: window.scrollY })); } catch {} };
+    window.addEventListener("scroll", saveView, { passive: true });
+    return () => { saveView(); window.removeEventListener("scroll", saveView); };
+  }, [wizardStep, activeStepIndex]);
+  useEffect(() => {
+    if (status !== "ready" || !savedView || !Number.isFinite(savedView.scrollY)) return;
+    const timer = window.setTimeout(() => window.scrollTo({ top: savedView.scrollY, behavior: "auto" }), 120);
+    return () => window.clearTimeout(timer);
+  }, [status]);
+  useEffect(() => {
+    Promise.all([api.get("/api/boxes"), api.get("/api/products"), api.get("/api/catalog/settings")]).then(([b, p, s]) => {
+      setBoxes(b.data);
+      setProducts(p.data);
+      setSettings(s.data);
+      setStatus("ready");
+    }).catch(() => setStatus("error"));
+  }, []);
+  useEffect(() => {
+    if (status !== "ready" || window.location.hash !== "#choose-box") return;
+    const timer = window.setTimeout(() => document.getElementById("choose-box")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    return () => window.clearTimeout(timer);
+  }, [status]);
   useEffect(() => {
     if (status !== "ready" || !user || params.get("payment") !== "paystack" || !params.get("order")) return;
     let active = true;
@@ -334,863 +172,493 @@ export default function Shop() {
         const { data } = await api.get(`/api/payments/verify/${params.get("order")}${reference ? `?reference=${encodeURIComponent(reference)}` : ""}`);
         if (!active) return;
         setConfirmation(data);
-        if (data.paymentStatus === "paid") {
-          const pending = readJSON(sessionStorage, PENDING_KEY, []);
-          if (pending.length) setCart((c) => c.filter((item) => !pending.includes(item.cartId)));
-          sessionStorage.removeItem(PENDING_KEY);
-        } else if (attempt < 4) timer = window.setTimeout(() => verify(attempt + 1), 2500);
+        if (data.paymentStatus !== "paid" && attempt < 4) timer = window.setTimeout(() => verify(attempt + 1), 2500);
       } catch (error) {
         if (active && attempt < 4) timer = window.setTimeout(() => verify(attempt + 1), 2500);
         else if (active) toast.error(error.response?.data?.message || "We could not verify the Paystack payment");
       }
     };
     verify();
-    return () => { active = false; window.clearTimeout(timer); };
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
   }, [status, user, params]);
-
   useEffect(() => {
     if (status !== "ready" || !user || params.get("payment") !== "cancelled" || !params.get("order")) return;
-    api.post(`/api/payments/cancel/${params.get("order")}`).catch(() => {});
+    api.post(`/api/payments/cancel/${params.get("order")}`).catch(() => {
+    });
   }, [status, user, params]);
-
   useEffect(() => {
     if (!boxId) return;
-    api.get(`/api/reviews?boxId=${boxId}`)
-      .then(({ data }) => { setBoxReviews(data.reviews || []); setReviewSummary(data.summary || { average: 0, count: 0 }); })
-      .catch(() => { setBoxReviews([]); setReviewSummary({ average: 0, count: 0 }); });
-  }, [boxId]);
-
+    api.get(`/api/reviews?boxId=${boxId}`).then(({ data }) => {
+      setBoxReviews(data.reviews || []);
+      setReviewSummary(data.summary || { average: 0, count: 0 });
+    }).catch(() => {
+      setBoxReviews([]);
+      setReviewSummary({ average: 0, count: 0 });
+    });
+    setSelectedImage(standaloneOnly ? "product-0" : box?.photos?.length ? "photo-0" : "card");
+  }, [boxId, boxes, standaloneOnly]);
+  useEffect(() => {
+    if (!standaloneOnly) {
+      setAddonReviews([]);
+      setAddonReviewSummary({ average: 0, count: 0 });
+      return;
+    }
+    api.get(`/api/reviews?productId=${standaloneOnly}`).then(({ data }) => {
+      setAddonReviews(data.reviews || []);
+      setAddonReviewSummary(data.summary || { average: 0, count: 0 });
+    }).catch(() => {
+      setAddonReviews([]);
+      setAddonReviewSummary({ average: 0, count: 0 });
+    });
+  }, [standaloneOnly]);
   useEffect(() => {
     if (!user) return;
-    api.get("/api/reviews/eligible")
-      .then(({ data }) => setReviewOption((data.options || []).find((o) => o.box && boxId && String(o.box._id) === String(boxId)) || null))
-      .catch(() => setReviewOption(null));
-  }, [user, boxId]);
-
-  /* ---------- derived catalog data ---------- */
-  const byCategory = useMemo(() => products.reduce((all, p) => { (all[p.category] ||= []).push(p); return all; }, {}), [products]);
+    api.get("/api/reviews/eligible").then(({ data }) => setReviewOption((data.options || []).find((option) => option.box && boxId && String(option.box._id) === String(boxId) || standaloneOnly && option.orderType === "standalone_addon" && option.products?.some((product) => String(product._id) === String(standaloneOnly))) || null)).catch(() => setReviewOption(null));
+  }, [user, boxId, standaloneOnly]);
+  const byCategory = useMemo(() => products.reduce((all, p) => {
+    (all[p.category] ||= []).push(p);
+    return all;
+  }, {}), [products]);
   const byId = useMemo(() => Object.fromEntries(products.map((p) => [p._id, p])), [products]);
-  const box = boxes.find((b) => b._id === boxId);
+  const box = boxes.find((item) => item._id === boxId);
   const definitions = box?.categoryDefinitions || [];
   const selectable = definitions.filter((d) => !d.includedAutomatically).sort((a, b) => categoryRank(a) - categoryRank(b));
-  const addonDefinition = selectable.find((d) => norm(d.key || d.name) === "addon" || norm(d.key || d.name) === "addons");
+  const addonDefinition = selectable.find((d) => String(d.key || d.name).toLowerCase().replace(/[^a-z]/g, "") === "addon");
   const regularSelectable = selectable.filter((d) => d !== addonDefinition);
+  useEffect(() => {
+    if (wizardStep !== 3 || activeStepIndex < 0) return;
+    const activeCategory = regularSelectable[activeStepIndex];
+    if (!activeCategory) return;
+    const key = String(activeCategory.key || activeCategory.name || "").toLowerCase().replace(/[^a-z]/g, "");
+    if (key !== "tea" && key !== "teas") return;
+    const chosen = picks[activeCategory.key] || [];
+    if (chosen.length < 5) return;
+    setActiveStepIndex(-1);
+    window.setTimeout(() => {
+      document.getElementById("products-category-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  }, [picks, activeStepIndex, wizardStep, regularSelectable]);
   const addonProducts = addonDefinition ? byCategory[addonDefinition.key] || [] : [];
-  const includedProducts = definitions.filter((d) => d.includedAutomatically).flatMap((d) => byCategory[d.key] || []);
-  const activeDefinition = regularSelectable.find((d) => d.key === activeCategory) || null;
-
+  const includedDefinitions = definitions.filter((d) => d.includedAutomatically);
+  const includedProducts = includedDefinitions.flatMap((d) => byCategory[d.key] || []);
   useEffect(() => {
     if (status !== "ready") return;
     if (!box && boxes[0]) setBoxId((boxes.find((b) => b.mostPopular) || boxes[0])._id);
-    if (!firstDeliveryDate && settings?.earliestBookableDate) setFirstDeliveryDate(toISODate(settings.earliestBookableDate));
+    if (!firstDeliveryDate && settings?.earliestBookableDate) setFirstDeliveryDate(new Date(settings.earliestBookableDate).toISOString().slice(0, 10));
   }, [status, box, boxes, settings, firstDeliveryDate]);
-
-  /* ---------- persistence ---------- */
   useEffect(() => {
-    if (confirmation) return;
-    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ boxId, picks, purchaseType, firstDeliveryDate, phone, address, discreet, cardMessage, gift })); } catch {}
-  }, [boxId, picks, purchaseType, firstDeliveryDate, phone, address, discreet, cardMessage, gift, confirmation]);
-  useEffect(() => { try { sessionStorage.setItem(VIEW_KEY, JSON.stringify({ wizardStep, maxStep })); } catch {} }, [wizardStep, maxStep]);
-  useEffect(() => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch {} }, [cart]);
+    if (!confirmation) {
+      try {
+        sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ boxId, picks, purchaseType, firstDeliveryDate, phone, address, cardMessage, gift }));
+      } catch {
+      }
+    }
+  }, [boxId, picks, purchaseType, firstDeliveryDate, phone, address, cardMessage, gift, confirmation]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("heribloom_cart", JSON.stringify(cart));
+    } catch {
+    }
+  }, [cart]);
   useEffect(() => {
     setSelectedCartIds((current) => {
-      if (!current.size && cart.length) return new Set(cart.map((i) => i.cartId));
-      const valid = new Set(cart.map((i) => i.cartId));
+      if (!current.size && cart.length) return new Set(cart.map((item) => item.cartId));
+      const valid = new Set(cart.map((item) => item.cartId));
       return new Set([...current].filter((id) => valid.has(id)));
     });
   }, [cart]);
-  useEffect(() => {
-    if (firstRender.current) { firstRender.current = false; return; }
-    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [wizardStep, activeCategory, mode]);
-
-  /* ---------- pricing and validation ---------- */
   const selections = Object.entries(picks).flatMap(([category, ids]) => ids.map((productId) => ({ category, productId, quantity: 1 })));
-  const extras = selections.reduce((sum, s) => sum + (byId[s.productId]?.priceModifier || 0), 0);
+  const extras = selections.reduce((total2, s) => total2 + (byId[s.productId]?.priceModifier || 0), 0);
   const discountPercent = purchaseType === "three_month" ? Number(settings?.discountPercent || 0) : 0;
   const discount = Math.round(((box?.price || 0) + extras) * discountPercent / 100);
   const count = purchaseType === "three_month" ? 3 : 1;
   const perBox = (box?.price || 0) + extras - discount;
   const total = perBox * count;
-
-  const selectionIssues = useMemo(() => {
-    const list = selectable.flatMap((d) => {
-      const selected = picks[d.key] || [];
-      const min = Number(d.minSelections || 0);
-      const max = d.maxSelections == null ? Infinity : Number(d.maxSelections);
-      const out = [];
-      if (selected.length < min) out.push(`${labelOf(d)} needs ${min === max ? `exactly ${min}` : `at least ${min}`}`);
-      if (selected.length > max) out.push(`${labelOf(d)} allows up to ${max}`);
-      if (!d.allowRepeat && new Set(selected).size !== selected.length) out.push(`${labelOf(d)} does not allow repeats`);
-      return out;
-    });
-    const groups = selectable.filter((d) => d.atLeastOneGroup).reduce((g, d) => { (g[d.atLeastOneGroup] ||= []).push(d); return g; }, {});
-    Object.values(groups).forEach((group) => {
-      if (!group.some((d) => (picks[d.key] || []).length > 0)) list.push(`Please choose at least one from ${group.map(labelOf).join(" or ")}`);
-    });
-    return list;
-  }, [selectable, picks]);
+  const selectionIssues = selectable.flatMap((definition) => {
+    const selected = picks[definition.key] || [];
+    const quantity = selected.length;
+    const minimum = Number(definition.minSelections || 0);
+    const maximum = definition.maxSelections == null ? Infinity : Number(definition.maxSelections);
+    const label = definition.name || CATEGORY_LABELS[definition.key] || definition.key;
+    const issues = [];
+    if (quantity < minimum) issues.push(`${label} requires ${minimum === maximum ? `exactly ${minimum}` : `at least ${minimum}`} selection(s)`);
+    if (quantity > maximum) issues.push(`${label} allows a maximum of ${maximum} selection(s)`);
+    if (!definition.allowRepeat && new Set(selected).size !== selected.length) issues.push(`${label} does not allow repeated products`);
+    return issues;
+  });
+  const selectionGroups = selectable.filter((definition) => definition.atLeastOneGroup).reduce((groups, definition) => {
+    (groups[definition.atLeastOneGroup] ||= []).push(definition);
+    return groups;
+  }, {});
+  Object.values(selectionGroups).forEach((group) => {
+    if (!group.some((definition) => (picks[definition.key] || []).length > 0)) {
+      selectionIssues.push(`Please choose at least one option from: ${group.map((definition) => definition.key).join(" or ")}`);
+    }
+  });
   const complete = selectionIssues.length === 0;
-
-  const cartCount = cart.reduce((s, i) => s + Number(i.quantity || 1), 0);
-  const selectedCartItems = cart.filter((i) => selectedCartIds.has(i.cartId));
-  const selectedCartCount = selectedCartItems.reduce((s, i) => s + Number(i.quantity || 1), 0);
-  const cartTotalAll = cart.reduce((s, i) => s + Number(i.unitPrice || 0) * Number(i.quantity || 1), 0);
-  const selectedCartTotal = selectedCartItems.reduce((s, i) => s + Number(i.unitPrice || 0) * Number(i.quantity || 1), 0);
-  const allCartSelected = cart.length > 0 && selectedCartItems.length === cart.length;
-  const needsPolicy = mode === "cart" ? selectedCartItems.some((i) => i.purchaseType === "three_month") : purchaseType === "three_month";
-
-  const getIssues = ({ withSelections = true, withPolicy = true } = {}) => {
-    const out = withSelections && mode === "box" ? [...selectionIssues] : [];
-    if (!phone.trim()) out.push("Phone number is required");
-    if (!address.street.trim() || !address.city.trim()) out.push("Street and city are required");
-    if (!firstDeliveryDate) out.push("Please choose a delivery date");
-    if (gift.isGift && (!gift.recipientName.trim() || !gift.recipientPhone.trim())) out.push("Gift recipient name and phone are required");
-    if (cardMessage.length > 240) out.push("Card message must be 240 characters or fewer");
-    if (withPolicy && needsPolicy && !accept) out.push("Please accept the three month cancellation terms");
-    return out;
+  const getCheckoutIssues = (includeSelections = true) => {
+    const issues = includeSelections && !standaloneOnly ? [...selectionIssues] : [];
+    if (!phone.trim()) issues.push("Phone number is required");
+    if (!address.street.trim() || !address.city.trim()) issues.push("Street and city are required");
+    if (!firstDeliveryDate) issues.push("Please choose a delivery date");
+    if (!standaloneOnly && gift.isGift && (!gift.recipientName.trim() || !gift.recipientPhone.trim())) issues.push("Gift recipient name and phone are required");
+    if (!standaloneOnly && cardMessage.length > 240) issues.push("Card message must be 240 characters or fewer");
+    if (!standaloneOnly && purchaseType === "three_month" && !accept) issues.push("Please accept the three-month cancellation policy");
+    return issues;
   };
-  const deliveryAddress = () => ({ ...address, deliveryNotes: [discreet ? "Please use discreet packaging." : "", address.deliveryNotes].filter(Boolean).join(" ") });
-
-  /* ---------- navigation ---------- */
-  const goTo = (target) => {
-    const next = Math.max(1, Math.min(6, Number(target) || 1));
-    if (next > wizardStep && mode === "box") {
-      if (!boxId) return toast.error("Choose a box first");
-      if (next > 3 && !complete) { toast.error(selectionIssues[0]); setActiveCategory(null); setWizardStep(3); return; }
-      if (next > 5) {
-        const d = getIssues({ withPolicy: false });
-        if (d.length) { setIssues(d); toast.error(d[0]); setWizardStep(5); return; }
+  const goToWizardStep = (nextStep) => {
+    const target = Math.max(1, Math.min(6, Number(nextStep) || 1));
+    if (target > wizardStep) {
+      if (wizardStep === 1 && !boxId) return toast.error("Please choose a box first");
+      if (wizardStep === 3 && !complete) return toast.error(selectionIssues[0] || "Complete your product selections first");
+      if (wizardStep === 5) {
+        const issues = getCheckoutIssues(false).filter((issue) => !issue.includes("cancellation policy"));
+        if (issues.length) {
+          setCheckoutIssues(issues);
+          return toast.error(issues[0]);
+        }
       }
     }
-    setIssues([]);
-    setActiveCategory(null);
-    setWizardStep(next);
-    setMaxStep((m) => Math.max(m, next));
+    setWizardStep(target);
+    const targetId = ({ 1: "choose-box", 2: "plan-section", 3: "products-category-list", 4: "addons-step", 5: "delivery-details", 6: "order-summary" })[target];
+    window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
-
-  /* ---------- selection logic ---------- */
-  const countOf = (def, id) => (picks[def.key] || []).filter((x) => x === id).length;
-  const isRepeat = (def) => def.allowRepeat && def.maxSelections !== 1;
-  const pick = (def, id) => {
-    const selected = picks[def.key] || [];
-    const same = selected.filter((x) => x === id).length;
-    const product = byId[id];
-    setIssues([]);
-    if (def.maxSelections === 1) { setPicks((p) => ({ ...p, [def.key]: [id] })); return true; }
-    if (!def.allowRepeat && same > 0) return false;
-    if (product?.inventory != null && same >= product.inventory) { toast.error(`Only ${product.inventory} available`); return false; }
-    if (def.maxSelections != null && selected.length >= def.maxSelections) { toast.error(`You can choose up to ${def.maxSelections} here`); return false; }
-    setPicks((p) => ({ ...p, [def.key]: [...(p[def.key] || []), id] }));
-    return true;
+  const wizardSteps = ["Choose box", "Choose plan", "Your products", "Add-ons", "Delivery & gift", "Checkout"];
+  const wizardStepReady = (index) => {
+    if (index === 0) return Boolean(boxId);
+    if (index === 1) return Boolean(boxId);
+    if (index === 2) return complete;
+    if (index === 3) return true;
+    if (index === 4) return Boolean(phone.trim() && address.street.trim() && address.city.trim() && firstDeliveryDate && (!gift.isGift || gift.recipientName.trim() && gift.recipientPhone.trim()));
+    return false;
   };
-  const unpick = (def, id) => {
-    setIssues([]);
-    setPicks((p) => { const list = [...(p[def.key] || [])]; const i = list.lastIndexOf(id); if (i >= 0) list.splice(i, 1); return { ...p, [def.key]: list }; });
+  const standaloneProduct = standaloneOnly ? byId[standaloneOnly] : null;
+  const selectedProducts = selections.map((selection) => ({ ...selection, product: byId[selection.productId] })).filter((selection) => selection.product);
+  const progressItems = [...regularSelectable, ...addonDefinition ? [addonDefinition] : []];
+  const progressComplete = progressItems.filter((definition) => {
+    const selectedCount = (picks[definition.key] || []).length;
+    return selectedCount >= Number(definition.minSelections || 0);
+  }).length;
+  const handleChoiceSelection = (definitionKey, shouldScroll = true) => {
+    const currentIndex = progressItems.findIndex((definition) => definition.key === definitionKey);
+    if (currentIndex < 0) return;
+    setActiveStepIndex(currentIndex);
+    if (!shouldScroll) return;
+    window.setTimeout(() => {
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < progressItems.length) {
+        sectionRefs.current[nextIndex]?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setActiveStepIndex(nextIndex);
+      } else {
+        document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 450);
   };
-  const choose = (def, id) => {
-    const selectedNow = (picks[def.key] || []).length;
-    const ok = pick(def, id);
-    const reachedMax = def.maxSelections != null && selectedNow + 1 >= def.maxSelections;
-    if (ok && (def.maxSelections === 1 || reachedMax) && def === activeDefinition) window.setTimeout(() => setActiveCategory(null), 380);
+  const openProductDrawer = (product, definition) => {
+    setProductDrawer({ product, definition });
   };
-  const toggleChoice = (def, id) => (countOf(def, id) > 0 ? unpick(def, id) : choose(def, id));
-
-  /* ---------- cart ---------- */
+  const drawerSelected = productDrawer ? (picks[productDrawer.definition.key] || []).filter((id) => id === productDrawer.product._id).length : 0;
+  const updateDrawerQuantity = (nextQuantity) => {
+    if (!productDrawer) return;
+    const { product, definition } = productDrawer;
+    const current = drawerSelected;
+    const next = Math.max(0, Number(nextQuantity) || 0);
+    const productLimit = definition.allowRepeat ? definition.maxSelections ?? product.inventory ?? 99 : 1;
+    if (product.inventory != null && next > product.inventory) return toast.error(`Only ${product.inventory} available`);
+    if (next > productLimit) return toast.error(`This choice can be selected ${productLimit === 1 ? "once" : `${productLimit} times`}`);
+    setPicks((all) => {
+      const existing = all[definition.key] || [];
+      const withoutProduct = existing.filter((id) => id !== product._id);
+      return { ...all, [definition.key]: [...withoutProduct, ...Array.from({ length: next }, () => product._id)] };
+    });
+  };
+  const continueFromDrawer = () => {
+    if (!productDrawer) return;
+    if (drawerSelected === 0) {
+      updateDrawerQuantity(1);
+      return;
+    }
+    const { definition } = productDrawer;
+    const categoryName = String(definition.key || definition.name || "").toLowerCase().replace(/[^a-z]/g, "");
+    const isTeaCategory = categoryName === "tea" || categoryName === "teas";
+    const selectedCount = (picks[definition.key] || []).length;
+    if (isTeaCategory && selectedCount < 5) {
+      const currentIndex = progressItems.findIndex((item) => item.key === definition.key);
+      if (currentIndex >= 0) setActiveStepIndex(currentIndex);
+      setProductDrawer(null);
+      return;
+    }
+    handleChoiceSelection(definition.key);
+    setProductDrawer(null);
+  };
+  const cartCount = cart.reduce((sum, item) => sum + Number(item.quantity || 1), 0);
+  const selectedCartItems = cart.filter((item) => selectedCartIds.has(item.cartId));
+  const selectedCartCount = selectedCartItems.reduce((sum, item) => sum + Number(item.quantity || 1), 0);
+  const cartTotal = cart.reduce((sum, item) => sum + Number(item.unitPrice || 0) * Number(item.quantity || 1), 0);
+  const selectedCartTotal = selectedCartItems.reduce((sum, item) => sum + Number(item.unitPrice || 0) * Number(item.quantity || 1), 0);
+  const allCartSelected = cart.length > 0 && selectedCartItems.length === cart.length;
+  const toggleCartItem = (cartId) => setSelectedCartIds((current) => { const next = new Set(current); if (next.has(cartId)) next.delete(cartId); else next.add(cartId); return next; });
+  const toggleAllCartItems = () => setSelectedCartIds(allCartSelected ? new Set() : new Set(cart.map((item) => item.cartId)));
   const addBoxToCart = () => {
     if (!box || !complete) return toast.error("Complete your box selections before adding it to the cart");
-    const photo = photosOf(box)[0];
-    const item = { itemType: "box", cartId: `box-${box._id}-${Date.now()}`, boxId: box._id, name: box.name, quantity: 1, unitPrice: Number(total || box.price || 0), purchaseType, selections: selections.map((s) => ({ ...s, productName: byId[s.productId]?.name || "Selected item" })), image: photo?.url || cardBox, imageAlt: photo?.alt || box.name };
-    setCart((c) => [...c, item]);
+    const boxPhoto = box.photos?.find((photo) => photo.active !== false) || null;
+    const cartSelections = selections.map((selection) => ({ ...selection, productName: byId[selection.productId]?.name || "Selected item" }));
+    const item = { itemType: "box", cartId: `box-${box._id}`, boxId: box._id, name: box.name, quantity: 1, unitPrice: Number(total || box.price || 0), purchaseType, selections: cartSelections, image: boxPhoto?.url || cardBox, imageAlt: boxPhoto?.alt || box.name };
+    setCart((current) => [...current.filter((entry) => entry.itemType !== "box"), item]);
     setCartOpen(true);
     toast.success(`${box.name} added to your cart`);
   };
   const addStandaloneToCart = (product, quantity = 1) => {
-    if (product.inventory != null && quantity > product.inventory) return toast.error(`Only ${product.inventory} available`);
-    setCart((c) => {
-      const existing = c.find((e) => e.itemType === "addon" && e.productId === product._id);
-      if (existing) return c.map((e) => (e === existing ? { ...e, quantity: Math.min(product.inventory ?? 99, e.quantity + quantity) } : e));
-      const photo = photosOf(product)[0];
-      return [...c, { itemType: "addon", cartId: `addon-${product._id}`, productId: product._id, name: product.name, quantity, unitPrice: Number(product.standalonePrice || 0), image: photo?.url || cardBox, imageAlt: photo?.alt || product.name }];
+    const requested = Math.max(1, Number(quantity) || 1);
+    if (product.inventory != null && requested > product.inventory) return toast.error(`Only ${product.inventory} available`);
+    setCart((current) => {
+      const existing = current.find((entry) => entry.itemType === "addon" && entry.productId === product._id);
+      if (existing) return current.map((entry) => entry === existing ? { ...entry, quantity: Math.min(product.inventory ?? 99, entry.quantity + requested) } : entry);
+      const productPhoto = product.photos?.find((photo) => photo.active !== false) || null;
+      return [...current, { itemType: "addon", cartId: `addon-${product._id}`, productId: product._id, name: product.name, quantity: requested, unitPrice: Number(product.standalonePrice || 0), image: productPhoto?.url || cardBox, imageAlt: productPhoto?.alt || product.name }];
     });
+    setCartOpen(true);
     toast.success(`${product.name} added to your cart`);
   };
-  const updateCartQuantity = (id, q) => setCart((c) => c.map((i) => (i.cartId === id ? { ...i, quantity: Math.max(1, Number(q) || 1) } : i)));
-  const removeCartItem = (id) => setCart((c) => c.filter((i) => i.cartId !== id));
-  const toggleCartItem = (id) => setSelectedCartIds((cur) => { const n = new Set(cur); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const startCartCheckout = () => {
-    if (!selectedCartItems.length) return toast.error("Select at least one item to check out");
-    setCartOpen(false);
-    setMode("cart");
-    setWizardStep(5);
-    setMaxStep((m) => Math.max(m, 5));
-    toast("Add your delivery details to pay for your cart");
-  };
-
-  /* ---------- payment ---------- */
-  const requireLogin = () => { navigate("/login", { state: { from: "/shop" } }); };
-  const payBox = async () => {
-    if (!user) return requireLogin();
-    const found = getIssues();
-    setIssues(found);
-    if (found.length) { toast.error(found[0]); if (!complete) { setActiveCategory(null); setWizardStep(3); } else if (found.length) setWizardStep(needsPolicy && found.every((m) => m.includes("terms")) ? 6 : 5); return; }
+  const updateCartQuantity = (cartId, quantity) => setCart((current) => current.map((item) => item.cartId === cartId ? { ...item, quantity: Math.max(1, Number(quantity) || 1) } : item));
+  const removeCartItem = (cartId) => setCart((current) => current.filter((item) => item.cartId !== cartId));
+  const submitCart = async () => {
+    if (!user) {
+      navigate("/login", { state: { from: "/shop" } });
+      return;
+    }
+    if (!selectedCartItems.length) return toast.error("Select at least one item to checkout");
+    const issues = getCheckoutIssues(false);
+    setCheckoutIssues(issues);
+    if (issues.length) {
+      toast.error(issues[0]);
+      document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     setSubmitting(true);
+    setPaymentNotice("");
     try {
-      const { data: order } = await api.post("/api/orders", { boxId, purchaseType, selections, firstDeliveryDate, phone: normalizePhone(phone), deliveryAddress: deliveryAddress(), gift, cardMessage, cancellationAccepted: accept, notificationPreferences });
+      const { data: order } = await api.post("/api/orders/cart", { items: selectedCartItems, firstDeliveryDate, phone, deliveryAddress: address, gift, cardMessage, cancellationAccepted: accept, notificationPreferences });
       const { data: payment } = await api.post("/api/payments/initiate", { orderId: order._id });
-      sessionStorage.removeItem(DRAFT_KEY);
-      if (payment.checkoutUrl) return window.location.assign(payment.checkoutUrl);
+      if (payment.checkoutUrl) {
+        const remaining = cart.filter((item) => !selectedCartIds.has(item.cartId));
+        setCart(remaining);
+        localStorage.setItem("heribloom_cart", JSON.stringify(remaining));
+        window.location.assign(payment.checkoutUrl);
+        return;
+      }
       throw new Error("Paystack did not provide a checkout link");
     } catch (error) {
-      const message = error.response?.data?.message || error.message || "Could not start Paystack checkout";
-      setIssues([message]);
-      toast.error(message);
+      toast.error(error.response?.data?.message || error.message || "Could not start Paystack checkout");
       setSubmitting(false);
     }
   };
-  const payCart = async () => {
-    if (!user) return requireLogin();
-    if (!selectedCartItems.length) return toast.error("Select at least one item to check out");
-    const found = getIssues({ withSelections: false });
-    setIssues(found);
-    if (found.length) return toast.error(found[0]);
+  const standaloneReady = standaloneProduct && phone.trim() && address.street.trim() && address.city.trim() && firstDeliveryDate;
+  const ready = standaloneOnly ? standaloneReady : box && complete && phone.trim() && address.street.trim() && address.city.trim() && firstDeliveryDate && (!gift.isGift || gift.recipientName.trim() && gift.recipientPhone.trim()) && (purchaseType !== "three_month" || accept);
+  const toggle = (definition, id) => {
+    setCheckoutIssues([]);
+    return setPicks((all) => {
+    const selected = all[definition.key] || [];
+    if (definition.maxSelections === 1) return { ...all, [definition.key]: selected[0] === id ? [] : [id] };
+    if (selected.includes(id) && !definition.allowRepeat) return { ...all, [definition.key]: selected.filter((x) => x !== id) };
+    if (definition.maxSelections != null && selected.length >= definition.maxSelections) return all;
+    return { ...all, [definition.key]: [...selected, id] };
+    });
+  };
+  const repeat = (definition, id, delta) => {
+    setCheckoutIssues([]);
+    return setPicks((all) => {
+    const selected = all[definition.key] || [];
+    const product = byId[id];
+    const available = product?.inventory;
+    if (delta > 0 && available != null && selected.filter((item) => item === id).length >= available) return all;
+    if (delta > 0 && definition.maxSelections != null && selected.length >= definition.maxSelections) return all;
+    const next = delta > 0 ? [...selected, id] : selected.filter((x, index) => x !== id || selected.indexOf(id) !== index);
+    return { ...all, [definition.key]: next };
+    });
+  };
+  const toggleRepeatChoice = (definition, id) => {
+    setCheckoutIssues([]);
+    return setPicks((all) => {
+    const selected = all[definition.key] || [];
+    if (selected.includes(id)) return { ...all, [definition.key]: selected.filter((item) => item !== id) };
+    const product = byId[id];
+    if (product?.inventory != null && product.inventory < 1) return all;
+    if (definition.maxSelections != null && selected.length >= definition.maxSelections) return all;
+    return { ...all, [definition.key]: [...selected, id] };
+    });
+  };
+  const openAddonModal = (product) => {
+    setAddonModal(product);
+    setAddonModalQuantity(1);
+    setAddonModalImage(0);
+    setAddonZoomPosition(null);
+  };
+  const openBoxModal = (selectedBox) => {
+    setBoxModal(selectedBox);
+    setBoxModalImage(0);
+    setBoxZoomPosition(null);
+  };
+  const handleBoxImageMove = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setBoxZoomPosition({ x: (event.clientX - rect.left) / rect.width * 100, y: (event.clientY - rect.top) / rect.height * 100 });
+  };
+  const addAddonToBox = (product, quantity = addonModalQuantity) => {
+    if (!addonDefinition) return;
+    const selected = picks[addonDefinition.key] || [];
+    const currentCount = selected.filter((id) => id === product._id).length;
+    const requested = Math.max(1, Number(quantity) || 1);
+    if (product.inventory != null && currentCount + requested > product.inventory) return toast.error(`Only ${Math.max(0, product.inventory - currentCount)} available for this Add-on`);
+    if (!addonDefinition.allowRepeat && currentCount > 0) return toast("This Add-on is already in your box");
+    if (addonDefinition.maxSelections != null && selected.length + requested > addonDefinition.maxSelections) return toast.error("You have reached the Add-ons limit");
+    setStandaloneOnly("");
+    setPicks((all) => ({ ...all, [addonDefinition.key]: [...all[addonDefinition.key] || [], ...Array.from({ length: requested }, () => product._id)] }));
+    setAddonModal(null);
+    toast.success(`${product.name} \xD7${requested} added to your box`);
+  };
+  const submit = async () => {
+    if (!user) {
+      navigate("/login", { state: { from: "/shop" } });
+      return;
+    }
+    const issues = getCheckoutIssues();
+    setCheckoutIssues(issues);
+    if (issues.length) {
+      toast.error(issues[0]);
+      document.getElementById("delivery-details")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     setSubmitting(true);
+    setPaymentNotice("");
     try {
-      const { data: order } = await api.post("/api/orders/cart", { items: selectedCartItems, firstDeliveryDate, phone: normalizePhone(phone), deliveryAddress: deliveryAddress(), gift, cardMessage, cancellationAccepted: accept, notificationPreferences });
+      const { data: order } = standaloneOnly ? await api.post("/api/orders/addon", { productId: standaloneOnly, quantity: standaloneQuantity, firstDeliveryDate, phone, deliveryAddress: address, notificationPreferences }) : await api.post("/api/orders", { boxId, purchaseType, selections, firstDeliveryDate, phone, deliveryAddress: address, gift, cardMessage, cancellationAccepted: accept, notificationPreferences });
       const { data: payment } = await api.post("/api/payments/initiate", { orderId: order._id });
+      sessionStorage.removeItem(DRAFT_KEY);
       if (payment.checkoutUrl) {
-        sessionStorage.setItem(PENDING_KEY, JSON.stringify(selectedCartItems.map((i) => i.cartId)));
-        return window.location.assign(payment.checkoutUrl);
+        window.location.assign(payment.checkoutUrl);
+        return;
       }
       throw new Error("Paystack did not provide a checkout link");
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Could not start Paystack checkout";
-      setIssues([message]);
+      setCheckoutIssues([message]);
       toast.error(message);
       setSubmitting(false);
     }
   };
-  const submitReview = async (event) => {
+  const submitBoxReview = async (event) => {
     event.preventDefault();
-    if (!reviewOption?.boxAvailable) return;
+    if (!reviewOption || reviewOption.orderType !== "standalone_addon" && !reviewOption.boxAvailable) return;
     try {
-      await api.post("/api/reviews", { orderId: reviewOption.orderId, boxId: reviewOption.box?._id, productIds: [], rating: reviewRating, text: reviewText });
-      toast.success("Thank you, your review is in");
+      await api.post("/api/reviews", { orderId: reviewOption.orderId, boxId: reviewOption.box?._id, productIds: reviewOption.orderType === "standalone_addon" ? [standaloneOnly] : [], rating: reviewRating, text: reviewText });
+      toast.success("Review submitted");
       setReviewText("");
-      const { data } = await api.get(`/api/reviews?boxId=${boxId}`);
-      setBoxReviews(data.reviews || []);
-      setReviewSummary(data.summary || { average: 0, count: 0 });
+      const { data } = await api.get(reviewOption.orderType === "standalone_addon" ? `/api/reviews?productId=${standaloneOnly}` : `/api/reviews?boxId=${boxId}`);
+      if (reviewOption.orderType === "standalone_addon") {
+        setAddonReviews(data.reviews || []);
+        setAddonReviewSummary(data.summary || { average: 0, count: 0 });
+      } else {
+        setBoxReviews(data.reviews || []);
+        setReviewSummary(data.summary || { average: 0, count: 0 });
+      }
       setReviewOption(null);
     } catch (error) {
       toast.error(error.response?.data?.message || "Could not submit review");
     }
   };
+  const handleImageMove = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setZoomPosition({ x: (event.clientX - rect.left) / rect.width * 100, y: (event.clientY - rect.top) / rect.height * 100 });
+  };
+  const handleAddonImageMove = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setAddonZoomPosition({ x: (event.clientX - rect.left) / rect.width * 100, y: (event.clientY - rect.top) / rect.height * 100 });
+  };
   const reorder = async () => {
     try {
       const { data } = await api.get(`/api/orders/${confirmation._id}/reorder`);
-      const next = data.selections.reduce((a, s) => { (a[s.category] ||= []).push(s.productId); return a; }, {});
+      const next = data.selections.reduce((a, s) => {
+        (a[s.category] ||= []).push(s.productId);
+        return a;
+      }, {});
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ boxId: data.boxId, picks: next, phone: data.phone, address: data.deliveryAddress, gift: data.gift, cardMessage: data.cardMessage }));
-      sessionStorage.setItem(VIEW_KEY, JSON.stringify({ wizardStep: 3, maxStep: 3 }));
-      window.location.assign("/shop");
-    } catch { toast.error("Could not load this order"); }
+      navigate("/shop");
+    } catch {
+      toast.error("Could not load this order");
+    }
   };
-
-  /* ---------- loading, error, confirmation ---------- */
-  if (status === "loading") return (
-    <div className="hb"><style>{STYLES}</style>
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6" aria-busy="true">
-        <div className="hb-skel h-10 w-72 rounded-full" />
-        <div className="hb-skel mt-8 h-14 rounded-full" />
-        <div className="mt-8 grid gap-5 sm:grid-cols-2"><div className="hb-skel h-80 rounded-3xl" /><div className="hb-skel h-80 rounded-3xl" /></div>
-      </div>
-    </div>
-  );
-  if (status === "error") return (
-    <div className="hb"><style>{STYLES}</style>
-      <div className="mx-auto max-w-md px-6 py-28 text-center">
-        <Bloom size={56} className="mx-auto text-[#C2185B]" />
-        <h1 className="font-display mt-5 text-3xl">We could not load the shop</h1>
-        <p className="hb-muted mt-2 text-sm">Check your connection and try again.</p>
-        <button type="button" className="hb-btn mt-6" onClick={() => setReloadKey((k) => k + 1)}>Try again</button>
-      </div>
-    </div>
-  );
+  if (status === "loading") return /* @__PURE__ */ React.createElement("div", { className: "hb min-h-screen bg-[#FBF7F2]" }, /* @__PURE__ */ React.createElement("style", null, STYLES), /* @__PURE__ */ React.createElement("p", { className: "py-32 text-center font-body font-light text-[#4B0D32]/70" }, /* @__PURE__ */ React.createElement(Heart, { size: 20, fill: "currentColor", className: "hb-float mx-auto mb-4 text-[#C2185B]" }), "Preparing your ritual..."));
+  if (status === "error") return /* @__PURE__ */ React.createElement("div", { className: "hb min-h-screen bg-[#FBF7F2]" }, /* @__PURE__ */ React.createElement("style", null, STYLES), /* @__PURE__ */ React.createElement("p", { className: "py-32 text-center font-body font-light text-[#4B0D32]/70" }, "We could not load the shop right now. Please try again."));
   if (confirmation) {
     const paid = confirmation.paymentStatus === "paid";
     const failed = confirmation.paymentStatus === "failed";
     const stageLabel = { awaiting_payment: "Awaiting payment", confirmed: "Confirmed", preparing: "Preparing", out_for_delivery: "Out for delivery", delivered: "Delivered", active: "Active", problem: "Problem" };
-    return (
-      <div className="hb"><style>{STYLES}</style>
-        <div className="mx-auto max-w-2xl px-5 py-14">
-          <div className="text-center">
-            <Bloom size={64} className="mx-auto text-[#C2185B]" />
-            <h1 className="font-display mt-4 text-4xl">{paid ? "Your order is confirmed" : failed ? "Payment was not completed" : "We are verifying your order"}</h1>
-            <p className="hb-muted mx-auto mt-3 max-w-md text-sm leading-6">{paid ? "Thank you. Your payment was received and your ritual is on its way to being prepared." : failed ? "Nothing more will be charged. You can return to the shop and try again." : "Paystack is still confirming your payment. Please keep this page open for a moment."}</p>
-          </div>
-          <div className="hb-panel mt-8 p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><p className="hb-muted text-xs">Order number</p><p className="font-display mt-1 text-2xl">{confirmation.orderNumber || confirmation._id}</p></div>
-              <span className="rounded-full bg-[#F8E8ED] px-3 py-2 text-xs font-semibold text-[#C2185B]">{stageLabel[confirmation.status] || confirmation.paymentStatus}</span>
-            </div>
-            <dl className="mt-5 grid gap-4 border-t border-[#4B0D32]/10 pt-5 text-sm sm:grid-cols-2">
-              <div><dt className="hb-muted">Box</dt><dd className="mt-1 font-semibold">{confirmation.boxName}</dd></div>
-              <div><dt className="hb-muted">Total paid</dt><dd className="mt-1 font-semibold text-[#C2185B]">{formatKsh(confirmation.totalPrice)}</dd></div>
-              <div><dt className="hb-muted">Payment</dt><dd className="mt-1 font-semibold">{paid ? "Paystack, paid" : confirmation.paymentStatus}</dd></div>
-              <div><dt className="hb-muted">Reference</dt><dd className="mt-1 break-all font-semibold">{confirmation.paymentReference || "Not available yet"}</dd></div>
-            </dl>
-          </div>
-          <div className="hb-panel mt-5 p-6">
-            <h2 className="font-display text-2xl">Delivery tracking</h2>
-            <p className="hb-muted mt-1 text-sm">Your progress updates here as your order is prepared.</p>
-            <div className="mt-4 space-y-3">
-              {(confirmation.deliveries || []).map((d) => (
-                <div key={d._id || d.sequence} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#4B0D32]/10 bg-white px-4 py-3">
-                  <div><p className="text-sm font-semibold">Delivery {d.sequence || 1}</p><p className="hb-muted mt-0.5 text-xs">Scheduled for {d.scheduledDate ? new Date(d.scheduledDate).toLocaleDateString() : "a date to be confirmed"}</p></div>
-                  <span className="rounded-full bg-[#F8E8ED] px-3 py-1 text-xs text-[#C2185B]">{stageLabel[d.status] || d.status}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to="/orders" className="hb-btn">Open order tracking</Link>
-            <button type="button" onClick={reorder} className="hb-btn-outline">Reorder the same picks</button>
-            <Link to="/" className="hb-btn-quiet">Home</Link>
-          </div>
-        </div>
-      </div>
-    );
+    return /* @__PURE__ */ React.createElement("div", { className: "hb min-h-screen bg-gradient-to-b from-[#FBF7F2] to-[#F8E8ED]/60" }, /* @__PURE__ */ React.createElement("style", null, STYLES), /* @__PURE__ */ React.createElement("div", { className: "hb-rise max-w-2xl mx-auto px-6 py-16" }, /* @__PURE__ */ React.createElement("div", { className: "text-center" }, /* @__PURE__ */ React.createElement(Heart, { className: "hb-float text-[#C2185B] mx-auto mb-4", fill: "currentColor" }), /* @__PURE__ */ React.createElement("h1", { className: "font-display font-bold text-4xl text-[#4B0D32] mb-3" }, paid ? "Your order is confirmed" : failed ? "Payment was not completed" : "Your order is being verified"), /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm text-[#4B0D32]/70 mb-8" }, paid ? "Thank you. Your payment was received and your order is now confirmed." : failed ? "Nothing more will be charged. You can return to the shop and try again." : "Paystack is still confirming your payment. Please wait a moment before closing this page.")), /* @__PURE__ */ React.createElement("div", { className: "bg-[#FBF7F2] border border-[#4B0D32]/10 rounded-3xl shadow-[0_24px_60px_-34px_rgba(75,13,50,0.3)] p-6 text-left mb-5" }, /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs tracking-[0.18em] text-[#C2185B]" }, "ORDER NUMBER"), /* @__PURE__ */ React.createElement("p", { className: "font-display text-2xl font-bold text-[#4B0D32] mt-1" }, confirmation.orderNumber || confirmation._id)), /* @__PURE__ */ React.createElement("span", { className: "rounded-full bg-[#F8E8ED] px-3 py-2 font-body text-xs font-semibold text-[#C2185B]" }, stageLabel[confirmation.status] || confirmation.paymentStatus)), /* @__PURE__ */ React.createElement("div", { className: "mt-5 grid sm:grid-cols-2 gap-3 border-t border-[#4B0D32]/10 pt-4 font-body text-sm" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[#4B0D32]/70" }, "Box"), /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-[#4B0D32] mt-1" }, confirmation.boxName)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[#4B0D32]/70" }, "Total paid"), /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-[#C2185B] mt-1" }, formatKsh(confirmation.totalPrice))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[#4B0D32]/70" }, "Payment"), /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-[#4B0D32] mt-1" }, paid ? "Paystack \xB7 Paid" : confirmation.paymentStatus)), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { className: "text-[#4B0D32]/70" }, "Payment reference"), /* @__PURE__ */ React.createElement("p", { className: "font-semibold text-[#4B0D32] mt-1 break-all" }, confirmation.paymentReference || "\u2014")))), /* @__PURE__ */ React.createElement("div", { className: "bg-[#FBF7F2] border border-[#4B0D32]/10 rounded-3xl shadow-[0_24px_60px_-34px_rgba(75,13,50,0.3)] p-6 text-left mb-8" }, /* @__PURE__ */ React.createElement("h2", { className: "font-display text-2xl font-bold text-[#4B0D32]" }, "Delivery tracking"), /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm text-[#4B0D32]/70 mt-1" }, "Your delivery progress will update here as your order is prepared."), /* @__PURE__ */ React.createElement("div", { className: "mt-5 space-y-3" }, (confirmation.deliveries || []).map((delivery) => /* @__PURE__ */ React.createElement("div", { key: delivery._id || delivery.sequence, className: "flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#4B0D32]/10 px-4 py-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm font-semibold text-[#4B0D32]" }, "Delivery ", delivery.sequence || 1), /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs text-[#4B0D32]/70 mt-1" }, "Scheduled for ", delivery.scheduledDate ? new Date(delivery.scheduledDate).toLocaleDateString() : "To be scheduled")), /* @__PURE__ */ React.createElement("span", { className: "rounded-full bg-[#F8E8ED] px-3 py-1 font-body text-xs text-[#C2185B]" }, stageLabel[delivery.status] || delivery.status))))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap justify-center gap-3" }, /* @__PURE__ */ React.createElement(Link, { to: "/orders", className: "bg-[#4B0D32] text-[#FBF7F2] rounded-full px-5 py-3 font-body text-sm transition hover:bg-[#C2185B]" }, "Open full order tracking"), /* @__PURE__ */ React.createElement("button", { onClick: reorder, className: "border border-[#C2185B] text-[#C2185B] rounded-full px-5 py-3 font-body text-sm transition hover:bg-[#C2185B] hover:text-[#FBF7F2]" }, "Reorder with same picks"), /* @__PURE__ */ React.createElement(Link, { to: "/", className: "border border-[#4B0D32]/10 text-[#4B0D32] rounded-full px-5 py-3 font-body text-sm" }, "Home"))));
   }
-
-  /* ---------- step renderers ---------- */
-  const renderBoxStep = () => (
-    <>
-      <StepHead title="Choose your box" hint="Pick the level of care that feels right. Preview the photos before you decide." />
-      <div className="grid gap-5 sm:grid-cols-2">
-        {boxes.map((b) => {
-          const photo = photosOf(b)[0];
-          const on = b._id === boxId;
-          return (
-            <div key={b._id} className="hb-card overflow-hidden" data-selected={on}>
-              <button type="button" aria-pressed={on} onClick={() => setBoxId(b._id)} className="block w-full text-left">
-                <div className="relative h-56 bg-white">
-                  <img src={photo?.url || cardBox} alt={photo?.alt || b.name} loading="lazy" className="h-full w-full object-contain" />
-                  {b.mostPopular && <span className="hb-ribbon">Most loved</span>}
-                </div>
-                <div className="p-5">
-                  <h3 className="font-display text-2xl">{b.name}</h3>
-                  <p className="hb-muted mt-1.5 text-sm leading-6">{b.tagline}</p>
-                  <p className="mt-4 text-lg font-semibold text-[#C2185B]">{formatKsh(b.price)} <span className="hb-muted text-sm font-normal">per box</span></p>
-                  {on && reviewSummary.count > 0 && <p className="hb-muted mt-1 text-xs">Rated {reviewSummary.average} out of 5 by {reviewSummary.count} customer{reviewSummary.count === 1 ? "" : "s"}</p>}
-                </div>
-              </button>
-              <div className="flex items-center justify-between px-4 pb-4">
-                <button type="button" className="hb-link" onClick={() => { setBoxModal(b); setBoxModalImage(0); }}>Preview photos</button>
-                {on && <span className="flex items-center gap-1 text-xs font-medium text-[#C2185B]"><Check size={14} /> Selected</span>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </>
-  );
-
-  const renderPlanStep = () => {
-    const base = box?.price || 0;
-    const pct = Number(settings?.discountPercent || 0);
-    const saving = Math.round(base * pct / 100);
-    const options = [
-      { key: "one_time", title: "One time purchase", price: formatKsh(base), line: "One box, no commitment." },
-      { key: "three_month", title: "Three month plan", price: formatKsh(base - saving), line: pct > 0 ? `Three boxes at ${pct}% off each. Save from ${formatKsh(saving * 3)} in total.` : "Three boxes, paid together." },
-    ];
-    return (
-      <>
-        <StepHead title="Choose your plan" hint="Pick a single ritual, or save when you commit to three boxes." />
-        <div className="grid gap-5 sm:grid-cols-2">
-          {options.map((o) => (
-            <button type="button" key={o.key} aria-pressed={purchaseType === o.key} onClick={() => setPurchaseType(o.key)} className="hb-card p-6 text-left" data-selected={purchaseType === o.key}>
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="font-display text-xl">{o.title}</h3>
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full border ${purchaseType === o.key ? "border-[#C2185B] bg-[#C2185B] text-white" : "border-[#4B0D32]/25"}`}>{purchaseType === o.key && <Check size={14} />}</span>
-              </div>
-              <p className="mt-4 text-2xl font-semibold text-[#C2185B]">{o.price}<span className="hb-muted text-sm font-normal"> per box</span></p>
-              <p className="hb-muted mt-2 text-sm leading-6">{o.line}</p>
-            </button>
-          ))}
-        </div>
-        {purchaseType === "three_month" && <p className="hb-muted mt-5 text-sm leading-6">You can change your choices for later boxes. Cancellation terms appear before you pay.</p>}
-      </>
-    );
-  };
-
-  const renderProductsStep = () => {
-    if (activeDefinition) {
-      const list = byCategory[activeDefinition.key] || [];
-      const n = (picks[activeDefinition.key] || []).length;
-      return (
-        <>
-          <button type="button" className="hb-link mb-3 -ml-1 inline-flex items-center gap-1" onClick={() => setActiveCategory(null)}><ArrowLeft size={14} /> All categories</button>
-          <StepHead title={labelOf(activeDefinition)} hint={`${ruleText(activeDefinition)} ${progressText(activeDefinition, n)}.`} />
-          <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(11rem,1fr))]">
-            {list.map((p) => (
-              <ProductCard key={p._id} product={p} count={countOf(activeDefinition, p._id)} repeat={isRepeat(activeDefinition)} onZoom={setLightbox}
-                onToggle={() => toggleChoice(activeDefinition, p._id)} onAdd={() => choose(activeDefinition, p._id)} onRemove={() => unpick(activeDefinition, p._id)} />
-            ))}
-          </div>
-          {!list.length && <p className="hb-muted text-sm">Nothing is available in this category right now.</p>}
-        </>
-      );
+  let step = 0;
+  const gallerySource = standaloneProduct?.photos?.filter((photo) => photo.active !== false) || box?.photos?.filter((photo) => photo.active !== false) || [];
+  const galleryImages = gallerySource.length ? gallerySource.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)).map((photo, index) => ({ id: standaloneProduct ? `product-${index}` : `photo-${index}`, src: photo.url, alt: photo.alt || `${standaloneProduct?.name || box?.name || "Heri Bloom"} photo` })) : [{ id: "card", src: cardBox, alt: `${box?.name || "Heri Bloom box"} product photo` }, { id: "hero", src: heroBox, alt: `${box?.name || "Heri Bloom box"} lifestyle photo` }];
+  const activeGalleryImage = galleryImages.find((image) => image.id === selectedImage) || galleryImages[0];
+  const currentReviews = standaloneProduct ? addonReviews : boxReviews;
+  const currentReviewSummary = standaloneProduct ? addonReviewSummary : reviewSummary;
+  const addonModalPhotos = addonModal?.photos?.filter((photo) => photo.active !== false) || [];
+  const addonModalActivePhoto = addonModalPhotos[addonModalImage] || addonModalPhotos[0];
+  const boxModalPhotos = boxModal?.photos?.filter((photo) => photo.active !== false) || [];
+  const boxModalActivePhoto = boxModalPhotos[boxModalImage] || boxModalPhotos[0];
+  const boxModalDisplayPhoto = boxModalActivePhoto || (boxModal ? { url: cardBox, alt: boxModal.name } : null);
+  return /* @__PURE__ */ React.createElement("div", { className: "hb relative min-h-screen" }, /* @__PURE__ */ React.createElement("style", null, STYLES), /* @__PURE__ */ React.createElement("div", { className: "relative z-10 mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6 md:pt-10" }, /* @__PURE__ */ React.createElement("div", { className: "mb-6 flex flex-wrap items-end justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] font-semibold uppercase tracking-[0.25em] text-[#C2185B]" }, "THE HERI BLOOM RITUAL"), /* @__PURE__ */ React.createElement("h1", { className: "mt-1 font-display text-3xl text-[#4B0D32] md:text-4xl" }, "Build your ritual box"), /* @__PURE__ */ React.createElement("p", { className: "mt-2 max-w-xl font-body text-sm text-[#4B0D32]/65" }, "Choose your box, explore one product category at a time, and personalize your selection."))), /* @__PURE__ */ React.createElement("div", { id: "wizard-stepper", className: "mb-6 px-1 py-2 sm:px-2" }, /* @__PURE__ */ React.createElement("div", { className: "hb-wizard-steps" }, wizardSteps.map((label, index) => /* @__PURE__ */ React.createElement("button", { type: "button", key: label, className: "hb-wizard-step", "aria-current": wizardStep === index + 1 ? "step" : void 0, "data-complete": wizardStepReady(index) && wizardStep > index + 1 ? "true" : "false", onClick: () => { if (index + 1 <= wizardStep) goToWizardStep(index + 1); } }, /* @__PURE__ */ React.createElement("span", { className: "hb-wizard-step-circle" }, wizardStepReady(index) && wizardStep > index + 1 ? /* @__PURE__ */ React.createElement(Check, { size: 14 }) : index + 1), /* @__PURE__ */ React.createElement("span", { className: "hb-wizard-step-label" }, label)))), /* @__PURE__ */ React.createElement("div", { className: "mt-3 flex items-center justify-between border-t border-[#4B0D32]/10 pt-3" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => goToWizardStep(wizardStep - 1), disabled: wizardStep === 1, className: "rounded-full border border-[#4B0D32]/20 px-4 py-2 font-body text-xs text-[#4B0D32] disabled:opacity-30" }, "Back"), /* @__PURE__ */ React.createElement("span", { className: "font-body text-[10px] uppercase tracking-[.16em] text-[#C2185B]" }, "Step ", wizardStep, " of 6"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => { if (wizardStep === 3) { if (activeStepIndex >= 0) { setActiveStepIndex(-1); window.scrollTo({ top: 0, behavior: "smooth" }); return; } if (!complete) return toast.error(selectionIssues[0] || "Choose the required products, or review each category"); setActiveStepIndex(regularSelectable.length); goToWizardStep(4); return; } if (wizardStep === 6) { if (purchaseType === "three_month" && !accept) return toast.error("Please accept the three-month cancellation policy"); submit(); return; } goToWizardStep(wizardStep + 1); }, disabled: wizardStep === 6 && submitting, className: "rounded-full bg-[#4B0D32] px-5 py-2.5 font-body text-xs text-[#FBF7F2] hover:bg-[#C2185B] disabled:opacity-40" }, wizardStep === 6 ? (submitting ? "Opening payment..." : "Confirm & pay") : wizardStep === 4 ? "Continue (or skip)" : "Continue ", wizardStep !== 6 && /* @__PURE__ */ React.createElement(ArrowRight, { size: 13, className: "ml-1 inline" })))), /* @__PURE__ */ /* Category-by-category navigation removed; the category chooser below is the single entry point. */ React.createElement("div", { className: "grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_360px] xl:gap-14" }, /* @__PURE__ */ React.createElement("main", { className: "space-y-8 hb-wizard-main", "data-wizard-step": wizardStep }, /* @__PURE__ */ React.createElement(Section, { id: "choose-box", n: ++step, title: "Choose your box", hint: "Start with the care level that feels right for you." }, /* @__PURE__ */ React.createElement("div", { className: "grid sm:grid-cols-2 gap-4" }, boxes.map((b) => {
+    const photo = b.photos?.filter((item) => item.active !== false).sort((a, z) => (a.sortOrder || 0) - (z.sortOrder || 0))[0];
+    return /* @__PURE__ */ React.createElement("button", { key: b._id, type: "button", onClick: () => {
+      setBoxId(b._id);
+      setStandaloneOnly("");
+      openBoxModal(b);
+    }, className: `group text-left rounded-[28px] border overflow-hidden transition-all duration-500 hover:-translate-y-1.5 ${b._id === boxId && !standaloneOnly ? "border-[#C2185B] bg-[#F8E8ED] shadow-[0_28px_60px_-28px_rgba(194,24,91,0.45)]" : "border-[#4B0D32]/10 bg-[#FBF7F2] hover:border-[#C2185B]/50 hover:shadow-[0_28px_60px_-34px_rgba(75,13,50,0.4)]"}` }, /* @__PURE__ */ React.createElement("div", { className: "h-52 bg-white overflow-hidden" }, photo ? /* @__PURE__ */ React.createElement("img", { src: photo.url, alt: photo.alt || b.name, className: "w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" }) : /* @__PURE__ */ React.createElement("img", { src: cardBox, alt: b.name, className: "w-full h-full object-contain" })), /* @__PURE__ */ React.createElement("div", { className: "p-5" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "font-display font-bold text-2xl text-[#4B0D32]" }, b.name), b.mostPopular && /* @__PURE__ */ React.createElement("span", { className: "rounded-full bg-[#4B0D32] text-[#FBF7F2] px-3 py-1 font-body text-[10px] tracking-wide" }, "MOST POPULAR")), /* @__PURE__ */ React.createElement("span", { className: "block font-body text-sm text-[#4B0D32]/70 mt-2" }, b.tagline), /* @__PURE__ */ React.createElement("span", { className: "block text-[#C2185B] font-body font-semibold text-lg mt-4" }, formatKsh(b.price), " ", /* @__PURE__ */ React.createElement("small", { className: "text-[#4B0D32]/70 font-normal" }, "/ box")), /* @__PURE__ */ React.createElement("span", { className: "inline-block mt-4 font-body text-xs text-[#C2185B]" }, "View photos and choose this box \u2192")));
+  }))), /* @__PURE__ */ React.createElement(Section, { id: "plan-section", n: ++step, title: "Choose your plan" }, /* @__PURE__ */ React.createElement("div", { className: "grid sm:grid-cols-2 gap-4" }, [["one_time", "One-time purchase", "One box, no commitment."], ["three_month", "Three-month plan", `${discountPercent}% off every box.`]].map(([key, title, text]) => /* @__PURE__ */ React.createElement("button", { type: "button", key, onClick: () => { setPurchaseType(key); setActiveStepIndex(-1); goToWizardStep(3); }, className: `text-left rounded-3xl border p-6 transition-all duration-500 hover:-translate-y-0.5 ${purchaseType === key ? "border-[#C2185B] bg-[#F8E8ED] shadow-[0_18px_40px_-22px_rgba(194,24,91,0.4)]" : "border-[#4B0D32]/10 bg-[#FBF7F2] hover:border-[#C2185B]/50"}` }, /* @__PURE__ */ React.createElement("b", { className: "font-body text-[#4B0D32]" }, title), /* @__PURE__ */ React.createElement("span", { className: "block font-body text-sm text-[#4B0D32]/70 mt-2" }, text))))), React.createElement("section", { id: "products-category-list", className: "hb-rise hb-editorial-section scroll-mt-24 rounded-[24px] border border-[#C2185B]/20 bg-white/75 p-5 shadow-sm md:p-8" }, React.createElement("div", { className: "mb-5" }, React.createElement("p", { className: "font-body text-[10px] font-semibold uppercase tracking-[.22em] text-[#C2185B]" }, "BUILD YOUR BOX"), React.createElement("h2", { className: "mt-1 font-display text-2xl text-[#4B0D32] md:text-3xl" }, "Choose a product category"), React.createElement("p", { className: "mt-2 font-body text-sm text-[#4B0D32]/70" }, "Start with pads or tampons, then explore the other categories in any order. Select a category to view its products. Your choices are saved as you go.")), React.createElement("div", { className: "grid gap-3 sm:grid-cols-2" }, regularSelectable.map((definition, index) => { const selected = picks[definition.key] || []; const categoryProducts = byCategory[definition.key] || []; const minimum = Number(definition.minSelections || 0); const isComplete = selected.length >= minimum; const label = CATEGORY_LABELS[definition.key] || definition.name || definition.key; return React.createElement("button", { key: definition.key, type: "button", className: "hb-product-category-card group flex min-h-[88px] items-center justify-between gap-4 rounded-xl px-5 py-4 text-left", "data-complete": isComplete && minimum > 0 ? "true" : "false", onClick: () => { setActiveStepIndex(index); window.setTimeout(() => document.getElementById(`step-${definition.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); } }, React.createElement("span", { className: "min-w-0" }, React.createElement("span", { className: "block font-body text-[15px] font-medium tracking-[-.01em] text-[#4B0D32]" }, label), React.createElement("span", { className: "mt-1.5 block font-body text-xs text-[#4B0D32]/55" }, categoryProducts.length ? `${categoryProducts.length} options to explore` : "Currently unavailable")), React.createElement("span", { className: "flex shrink-0 items-center gap-3" }, selected.length ? React.createElement("span", { className: "font-body text-[11px] font-medium text-[#C2185B]" }, `${selected.length} selected`) : React.createElement("span", { className: "font-body text-[11px] text-[#4B0D32]/45 transition-colors group-hover:text-[#C2185B]" }, "Explore"), React.createElement("span", { className: "flex h-8 w-8 items-center justify-center rounded-full border border-[#4B0D32]/10 text-[#C2185B] transition-all group-hover:border-[#C2185B]/40 group-hover:translate-x-0.5" }, isComplete && minimum > 0 ? React.createElement(Check, { size: 15 }) : React.createElement(ArrowRight, { size: 15 })))); })), React.createElement("div", { className: "mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#4B0D32]/10 pt-4" }, React.createElement("p", { className: "font-body text-xs text-[#4B0D32]/65" }, progressComplete, " of ", regularSelectable.length, " categories have selections"), React.createElement("button", { type: "button", onClick: () => { if (!complete) return toast.error(selectionIssues[0] || "Please complete the required product categories"); setActiveStepIndex(regularSelectable.length); goToWizardStep(4); }, className: "rounded-full bg-[#4B0D32] px-5 py-3 font-body text-xs font-medium text-white hover:bg-[#C2185B]" }, "Continue to add-ons ", React.createElement(ArrowRight, { size: 14, className: "ml-1 inline" })))),
+  regularSelectable.filter((d, definitionIndex) => definitionIndex === activeStepIndex).map((d, definitionIndex) => {
+    const selected = picks[d.key] || [];
+    const list = byCategory[d.key] || [];
+    const isRepeat = d.allowRepeat && d.maxSelections !== 1;
+    return /* @__PURE__ */ React.createElement(Section, { id: `step-${d.key}`, key: d.key, n: ++step, sectionRef: (element) => {
+      sectionRefs.current[definitionIndex] = element;
+    }, isActive: activeStepIndex === definitionIndex, title: CATEGORY_LABELS[d.key] || d.name, hint: d.optionalExtra ? "Optional paid extra." : `Choose ${d.minSelections === d.maxSelections ? d.minSelections : `${d.minSelections}\u2013${d.maxSelections ?? "any"}`}.` }, /* @__PURE__ */ React.createElement("div", { className: "grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(10rem,1fr))]" }, list.map((p) => isRepeat ? /* @__PURE__ */ React.createElement("div", { key: p._id }, /* @__PURE__ */ React.createElement(Choice, { onImageClick: setProductLightbox, product: p, selected: selected.includes(p._id), disabled: p.inventory != null && selected.filter((id) => id === p._id).length >= p.inventory && !selected.includes(p._id), onClick: () => { const isTea = /^(tea|teas)$/.test(String(d.key || d.name || "").toLowerCase().replace(/[^a-z]/g, "")); const nextCount = selected.length + (selected.includes(p._id) ? -1 : 1); toggleRepeatChoice(d, p._id); if (!isTea || nextCount >= 5) { window.setTimeout(() => { setActiveStepIndex(-1); document.getElementById("products-category-list")?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 180); } } }), selected.includes(p._id) && /* @__PURE__ */ React.createElement("div", { className: "flex justify-center items-center gap-3 mt-2" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => repeat(d, p._id, -1) }, /* @__PURE__ */ React.createElement(Minus, { size: 15 })), /* @__PURE__ */ React.createElement("span", { className: "font-body text-sm" }, selected.filter((id) => id === p._id).length), /* @__PURE__ */ React.createElement("button", { type: "button", disabled: p.inventory != null && selected.filter((id) => id === p._id).length >= p.inventory, onClick: () => repeat(d, p._id, 1) }, /* @__PURE__ */ React.createElement(Plus, { size: 15 })))) : /* @__PURE__ */ React.createElement(Choice, { key: p._id, product: p, selected: selected.includes(p._id), onClick: () => { const isTea = /^(tea|teas)$/.test(String(d.key || d.name || "").toLowerCase().replace(/[^a-z]/g, "")); const nextCount = selected.length + (selected.includes(p._id) ? -1 : 1); toggle(d, p._id); if (!isTea || nextCount >= 5) { window.setTimeout(() => { setActiveStepIndex(-1); document.getElementById("products-category-list")?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 180); } } }))), list.length === 0 && /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm text-[#4B0D32]/70" }, "No in-stock options available."));
+  }), addonDefinition && activeStepIndex === regularSelectable.length && /* @__PURE__ */ React.createElement(LuxuryStepWrapper, { isActive: true }, /* @__PURE__ */ React.createElement("section", { ref: (element) => {
+    sectionRefs.current[regularSelectable.length] = element;
+  }, id: "addons-step", className: "hb-rise hb-editorial-section rounded-[12px] border border-[#4B0D32]/10 bg-white/65 p-6 shadow-sm md:p-10 lg:p-12" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-end justify-between gap-4 mb-5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs tracking-[0.2em] text-[#C2185B] mb-2" }, "PERSONALIZE FURTHER"), /* @__PURE__ */ React.createElement("h2", { className: "font-display font-bold text-3xl text-[#4B0D32]" }, "Add-ons"), /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm text-[#4B0D32]/70 mt-1" }, "Click an item to view photos, details, and add it without leaving your order.")), /* @__PURE__ */ React.createElement(ShoppingBag, { className: "text-[#C2185B]" }), React.createElement("button", { type: "button", onClick: () => { setActiveStepIndex(-1); goToWizardStep(5); }, className: "rounded-full border border-[#4B0D32]/20 px-4 py-2 font-body text-xs font-medium text-[#4B0D32] hover:border-[#C2185B] hover:text-[#C2185B]" }, "Skip add-ons")), /* @__PURE__ */ React.createElement("div", { className: "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))]" }, addonProducts.map((product) => {
+    const selectedCount = (picks[addonDefinition.key] || []).filter((id) => id === product._id).length;
+    const photo = product.photos?.find((item) => item.active !== false);
+    return /* @__PURE__ */ React.createElement("button", { type: "button", key: product._id, onClick: () => openAddonModal(product), className: `group text-left hb-editorial-card rounded-xl border overflow-hidden bg-[#FBF7F2] transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_24px_50px_-28px_rgba(75,13,50,0.4)] ${selectedCount ? "border-[#C2185B] bg-[#F8E8ED]" : "border-[#4B0D32]/10"}` }, /* @__PURE__ */ React.createElement("div", { className: "h-52 bg-white overflow-hidden p-1.5 sm:h-60" }, photo ? /* @__PURE__ */ React.createElement("img", { src: photo.url, alt: photo.alt || product.name, className: "w-full h-full rounded-xl object-cover transition-transform duration-300 group-hover:scale-110" }) : /* @__PURE__ */ React.createElement("div", { className: "h-full flex items-center justify-center font-body text-xs text-[#4B0D32]/70" }, "Add-on image coming soon")), /* @__PURE__ */ React.createElement("div", { className: "p-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between gap-3" }, /* @__PURE__ */ React.createElement("span", { className: "font-body font-semibold text-[#4B0D32]" }, product.name), selectedCount > 0 && /* @__PURE__ */ React.createElement("span", { className: "rounded-full bg-[#4B0D32] text-[#FBF7F2] px-2 py-1 text-[10px]" }, selectedCount, " added")), /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs text-[#4B0D32]/70 mt-2" }, formatKsh(product.standalonePrice ?? product.priceModifier), product.standalonePrice != null ? " standalone" : " add-on")));
+  })), !addonProducts.length && /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm text-[#4B0D32]/70" }, "No Add-ons are currently available."))), /* @__PURE__ */ React.createElement(Section, { id: "delivery-details", n: ++step, title: "Delivery details" }, /* @__PURE__ */ React.createElement("div", { className: "grid sm:grid-cols-2 gap-3" }, /* @__PURE__ */ React.createElement("input", { className: `${inputClass} sm:col-span-2`, required: true, placeholder: "Phone number *", value: phone, onChange: (e) => setPhone(e.target.value) }), /* @__PURE__ */ React.createElement("input", { className: `${inputClass} sm:col-span-2`, required: true, placeholder: "Street and building *", value: address.street, onChange: (e) => setAddress({ ...address, street: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { className: inputClass, required: true, placeholder: "City or town *", value: address.city, onChange: (e) => setAddress({ ...address, city: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { className: inputClass, placeholder: "County", value: address.county, onChange: (e) => setAddress({ ...address, county: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { className: `${inputClass} sm:col-span-2`, type: "date", min: settings?.earliestBookableDate ? new Date(settings.earliestBookableDate).toISOString().slice(0, 10) : void 0, value: firstDeliveryDate, onChange: (e) => setFirstDeliveryDate(e.target.value) }), /* @__PURE__ */ React.createElement("textarea", { className: `${inputClass} sm:col-span-2`, placeholder: "Delivery notes for the courier", value: address.deliveryNotes, onChange: (e) => setAddress({ ...address, deliveryNotes: e.target.value }) }), /* @__PURE__ */ React.createElement("div", { className: "sm:col-span-2 rounded-xl border border-[#C2185B]/20 bg-[#F8E8ED] p-4" }, /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm font-semibold text-[#4B0D32]" }, "How should we send updates?"), /* @__PURE__ */ React.createElement("label", { className: "mt-3 flex items-center gap-2 font-body text-xs text-[#4B0D32]" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: notificationPreferences.email, onChange: (e) => setNotificationPreferences((current) => ({ ...current, email: e.target.checked })), className: "accent-[#C2185B]" }), " Email updates"), /* @__PURE__ */ React.createElement("label", { className: "mt-2 flex items-center gap-2 font-body text-xs text-[#4B0D32]" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: notificationPreferences.whatsapp, onChange: (e) => setNotificationPreferences((current) => ({ ...current, whatsapp: e.target.checked })), className: "accent-[#C2185B]" }), " Optional WhatsApp updates")))), /* @__PURE__ */ React.createElement(Section, { id: "card-message-step", n: ++step, title: "Card message and gift" }, /* @__PURE__ */ React.createElement("textarea", { className: `${inputClass} min-h-[80px]`, maxLength: 240, placeholder: "Short message on a card (optional)", value: cardMessage, onChange: (e) => setCardMessage(e.target.value) }), /* @__PURE__ */ React.createElement("label", { className: "flex gap-2 items-center font-body text-sm text-[#4B0D32] mt-4" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: gift.isGift, onChange: (e) => setGift({ ...gift, isGift: e.target.checked }) }), " This is a gift"), gift.isGift && /* @__PURE__ */ React.createElement("div", { className: "grid sm:grid-cols-2 gap-3 mt-3" }, /* @__PURE__ */ React.createElement("input", { className: inputClass, required: true, placeholder: "Recipient name *", value: gift.recipientName, onChange: (e) => setGift({ ...gift, recipientName: e.target.value }) }), /* @__PURE__ */ React.createElement("input", { className: inputClass, required: true, placeholder: "Recipient phone *", value: gift.recipientPhone, onChange: (e) => setGift({ ...gift, recipientPhone: e.target.value }) }))), purchaseType === "three_month" && /* @__PURE__ */ React.createElement(Section, { id: "three-month-terms", n: ++step, title: "Three-month plan terms" }, /* @__PURE__ */ React.createElement("label", { className: "flex gap-3 font-body text-sm text-[#4B0D32]" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: accept, onChange: (e) => setAccept(e.target.checked) }), " I understand that cancellation is only allowed inside the change window; unshipped boxes are refunded and delivered boxes are repriced at the normal one-time price."))), React.createElement("div", { className: "mt-6 flex justify-end border-t border-[#4B0D32]/10 pt-5" }, React.createElement("button", { type: "button", onClick: () => goToWizardStep(6), className: "inline-flex items-center justify-center rounded-full bg-[#4B0D32] px-7 py-3 font-body text-sm font-medium text-[#FBF7F2] shadow-sm transition hover:bg-[#C2185B]" }, "Proceed to order summary ", React.createElement(ArrowRight, { size: 16, className: "ml-2" }))), /* @__PURE__ */ React.createElement("aside", { id: "order-summary", className: wizardStep === 6 ? "space-y-4 lg:col-span-2 scroll-mt-24" : "hidden" }, /* @__PURE__ */ React.createElement("div", { className: "hb-rise flex flex-col rounded-[28px] border border-[#4B0D32]/10 bg-[#FBF7F2] p-3 shadow-[0_18px_42px_-28px_rgba(75,13,50,0.3)] md:p-4" }, /* @__PURE__ */ React.createElement("div", { className: "mb-3 grid gap-3 rounded-2xl border border-[#C2185B]/20 bg-gradient-to-br from-[#F8E8ED] to-white p-3 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-center" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C2185B]" }, "YOUR BESPOKE VANITY"), /* @__PURE__ */ React.createElement("p", { className: "mt-1 font-display text-xl text-[#4B0D32]" }, "Building your ritual")), /* @__PURE__ */ React.createElement(ShoppingBag, { size: 20, className: "text-[#C2185B]" })), /* @__PURE__ */ React.createElement("div", { className: "mt-4 flex min-h-20 flex-wrap content-start gap-2 rounded-xl border border-dashed border-[#C2185B]/30 bg-white/70 p-3" }, selectedProducts.length ? selectedProducts.map(({ product, category }, index) => /* @__PURE__ */ React.createElement("span", { key: `${product._id}-${index}`, className: "hb-pop rounded-full bg-[#4B0D32] px-3 py-1.5 font-body text-[10px] text-[#FBF7F2]" }, product.name)) : /* @__PURE__ */ React.createElement("span", { className: "font-body text-xs text-[#4B0D32]/55" }, "Your selected essentials will appear here.")), /* @__PURE__ */ React.createElement("div", { className: "mt-3 flex items-center justify-between font-body text-xs text-[#4B0D32]/65" }, /* @__PURE__ */ React.createElement("span", null, selectedProducts.length, " selected"), /* @__PURE__ */ React.createElement("span", null, progressComplete, "/", progressItems.length || 0, " steps ready"))), /* @__PURE__ */ React.createElement("div", { className: "relative group rounded-xl overflow-hidden bg-[#F8E8ED] mb-3 cursor-zoom-in", onMouseMove: handleImageMove, onMouseLeave: () => setZoomPosition(null) }, /* @__PURE__ */ React.createElement("img", { src: activeGalleryImage.src, alt: activeGalleryImage.alt, className: "block w-full aspect-[4/3] object-contain" }), zoomPosition && /* @__PURE__ */ React.createElement("div", { "aria-hidden": "true", className: "absolute inset-0 pointer-events-none transition-opacity duration-150", style: { backgroundImage: `url(${activeGalleryImage.src})`, backgroundRepeat: "no-repeat", backgroundSize: "250% 250%", backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%` } })), /* @__PURE__ */ React.createElement("div", { className: "flex gap-2 mb-5" }, galleryImages.map((image) => /* @__PURE__ */ React.createElement("button", { type: "button", key: image.id, onClick: () => setSelectedImage(image.id), className: `w-14 h-14 rounded-lg overflow-hidden border-2 ${selectedImage === image.id ? "border-[#C2185B]" : "border-transparent"}` }, /* @__PURE__ */ React.createElement("img", { src: image.src, alt: "", className: "w-full h-full object-cover" })))), /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs tracking-[0.2em] text-[#C2185B]" }, "LIVE ORDER SUMMARY"), /* @__PURE__ */ React.createElement("h2", { className: "font-display font-bold text-2xl text-[#4B0D32] mt-1" }, standaloneProduct ? standaloneProduct.name : box?.name || "Choose a box"), React.createElement("section", { className: "mt-5 rounded-xl border border-[#C2185B]/15 bg-white/75 p-4" }, React.createElement("h3", { className: "font-body text-xs font-semibold uppercase tracking-[.16em] text-[#C2185B]" }, "Your selections"), standaloneProduct ? React.createElement("div", { className: "mt-3 flex items-center justify-between gap-3 font-body text-sm text-[#4B0D32]" }, React.createElement("span", null, standaloneProduct.name), React.createElement("span", null, "Qty ", standaloneQuantity)) : React.createElement("ul", { className: "mt-3 space-y-2" }, selectedProducts.filter((entry, index, all) => all.findIndex((candidate) => candidate.product._id === entry.product._id) === index).map(({ product, category }, index) => React.createElement("li", { key: `${product._id}-${index}`, className: "flex items-start justify-between gap-3 border-b border-[#4B0D32]/[.07] pb-2 last:border-0" }, React.createElement("span", { className: "min-w-0" }, React.createElement("span", { className: "block font-body text-sm text-[#4B0D32]" }, product.name), React.createElement("span", { className: "block font-body text-[10px] text-[#4B0D32]/50" }, CATEGORY_LABELS[category] || category)), React.createElement("span", { className: "shrink-0 font-body text-xs text-[#4B0D32]/70" }, "×", selectedProducts.filter((entry) => entry.product._id === product._id).length))))), React.createElement("div", { className: "mt-3 rounded-xl border border-[#4B0D32]/10 bg-white/75 p-4" }, React.createElement("h3", { className: "font-body text-xs font-semibold uppercase tracking-[.16em] text-[#C2185B]" }, "Delivery details"), React.createElement("div", { className: "mt-2 space-y-1 font-body text-xs leading-5 text-[#4B0D32]/75" }, React.createElement("p", null, phone), React.createElement("p", null, [address.street, address.city, address.county].filter(Boolean).join(", ")), React.createElement("p", null, "Preferred delivery: ", firstDeliveryDate || "Not selected"), address.deliveryNotes && React.createElement("p", null, "Notes: ", address.deliveryNotes), gift.isGift && React.createElement("p", null, "Gift for: ", gift.recipientName, " · ", gift.recipientPhone))), !standaloneProduct && box?.description && /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm leading-6 text-[#4B0D32]/70 mt-3" }, box.description), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between font-body text-sm mt-4" }, /* @__PURE__ */ React.createElement("span", null, standaloneProduct ? "Standalone Add-on" : `${purchaseType === "three_month" ? "Three-month plan" : "One-time purchase"}`), /* @__PURE__ */ React.createElement("span", null, formatKsh(standaloneProduct ? standaloneProduct.standalonePrice * standaloneQuantity : box?.price))), !standaloneProduct && extras > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex justify-between font-body text-sm text-[#4B0D32]/70 mt-2" }, /* @__PURE__ */ React.createElement("span", null, "Paid extras"), /* @__PURE__ */ React.createElement("span", null, formatKsh(extras))), !standaloneProduct && purchaseType === "three_month" && /* @__PURE__ */ React.createElement("div", { className: "flex justify-between font-body text-sm text-[#C2185B] border-t border-[#4B0D32]/10 pt-3 mt-3" }, /* @__PURE__ */ React.createElement("span", null, "Discount (", discountPercent, "%)"), /* @__PURE__ */ React.createElement("span", null, "-", formatKsh(discount))), /* @__PURE__ */ React.createElement("div", { className: "flex justify-between border-t border-[#4B0D32]/10 pt-4 mt-4" }, /* @__PURE__ */ React.createElement("span", { className: "font-body text-sm text-[#4B0D32]/70" }, standaloneProduct ? `${standaloneQuantity} item${standaloneQuantity === 1 ? "" : "s"}` : `${count} box total`), /* @__PURE__ */ React.createElement("b", { className: "font-display text-2xl text-[#C2185B]" }, formatKsh(standaloneProduct ? standaloneProduct.standalonePrice * standaloneQuantity : total))), /* @__PURE__ */ React.createElement("div", { className: "mt-6 border-t border-[#4B0D32]/10 pt-5" }, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] tracking-[0.2em] text-[#C2185B]" }, "SECURE PAYMENT"), /* @__PURE__ */ React.createElement("h3", { className: "font-display text-xl text-[#4B0D32] mt-1" }, "Pay securely with Paystack"), /* @__PURE__ */ React.createElement("div", { className: "mt-3 rounded-xl border border-[#C2185B]/20 bg-[#F8E8ED] p-4" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement(CreditCard, { size: 20, className: "text-[#C2185B]" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm font-semibold text-[#4B0D32]" }, "Card, mobile money or bank transfer"), /* @__PURE__ */ React.createElement("p", { className: "mt-1 font-body text-xs leading-5 text-[#4B0D32]/70" }, "You will be redirected to Paystack\u2019s secure test checkout."))))), checkoutIssues.length > 0 && /* @__PURE__ */ React.createElement("div", { role: "alert", className: "mt-4 rounded-xl border border-[#C2185B]/30 bg-[#F8E8ED] p-3" }, /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs font-semibold text-[#4B0D32]" }, "A few details need your attention"), /* @__PURE__ */ React.createElement("ul", { className: "mt-2 list-disc space-y-1 pl-4 font-body text-xs text-[#4B0D32]" }, checkoutIssues.map((issue, index) => /* @__PURE__ */ React.createElement("li", { key: `${index}-${issue}` }, issue)))),
+      /* @__PURE__ */ React.createElement("button", { onClick: submit, disabled: submitting || !ready, className: "w-full mt-6 bg-[#4B0D32] text-[#FBF7F2] rounded-full py-3.5 font-body text-sm tracking-wide transition hover:-translate-y-0.5 hover:bg-[#C2185B] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40" }, submitting ? "Opening Paystack checkout..." : user ? "Complete checkout · Pay with Paystack" : "Log in to complete checkout", React.createElement(ArrowRight, { size: 16, className: "inline ml-2" })), React.createElement("button", { type: "button", onClick: () => standaloneProduct ? addStandaloneToCart(standaloneProduct, standaloneQuantity) : addBoxToCart(), disabled: standaloneProduct ? !standaloneReady : !box || !complete, className: "w-full mt-3 border border-[#C2185B] text-[#C2185B] rounded-full py-3 font-body text-sm disabled:cursor-not-allowed disabled:opacity-40" }, standaloneProduct ? "Add this add-on to cart " : "Add completed box to cart ", React.createElement(ShoppingBag, { size: 15, className: "inline ml-1" }))), /* @__PURE__ */ React.createElement("section", { className: "bg-[#FBF7F2]/90 border border-[#4B0D32]/10 rounded-3xl p-5 shadow-[0_16px_40px_-28px_rgba(75,13,50,0.3)]" }, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] tracking-[0.2em] text-[#C2185B] mb-3" }, "CUSTOMER CARE"), [["shipping", "Shipping & delivery", settings?.legal?.shipping], ["returns", "Returns, refunds & cancellations", settings?.legal?.returns]].map(([key, title, policy]) => /* @__PURE__ */ React.createElement("div", { key, className: "border-t border-[#4B0D32]/10 first:border-t-0" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setOpenPolicy((current) => current === key ? "" : key), className: "flex w-full items-center justify-between gap-3 py-3 text-left font-body text-sm font-semibold text-[#4B0D32]" }, /* @__PURE__ */ React.createElement("span", null, title), /* @__PURE__ */ React.createElement(ChevronDown, { size: 16, className: `shrink-0 transition-transform ${openPolicy === key ? "rotate-180 text-[#C2185B]" : "text-[#4B0D32]/70"}` })), openPolicy === key && /* @__PURE__ */ React.createElement("div", { className: "pb-3" }, /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs leading-6 text-[#4B0D32]/70" }, policy?.summary), /* @__PURE__ */ React.createElement("p", { className: "mt-2 whitespace-pre-line font-body text-xs leading-6 text-[#4B0D32]/70" }, policy?.body), /* @__PURE__ */ React.createElement(Link, { to: `/policies/${key}`, className: "mt-2 inline-flex font-body text-xs font-semibold text-[#C2185B] hover:text-[#4B0D32]" }, "Read full policy ", /* @__PURE__ */ React.createElement(ArrowRight, { size: 13, className: "ml-1" })))))), React.createElement("section", { className: "bg-[#FBF7F2]/90 border border-[#4B0D32]/10 rounded-3xl p-6 shadow-[0_16px_40px_-28px_rgba(75,13,50,0.3)]" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("h3", { className: "font-display font-bold text-xl text-[#4B0D32]" }, "Reviews for ", standaloneProduct?.name || box?.name || "this box"), currentReviewSummary.count > 0 && /* @__PURE__ */ React.createElement("span", { className: "font-body text-sm text-[#C2185B]" }, currentReviewSummary.average, "/5 (", currentReviewSummary.count, ")")), /* @__PURE__ */ React.createElement("div", { className: "space-y-3 mt-4" }, currentReviews.slice(0, 3).map((review) => /* @__PURE__ */ React.createElement("article", { key: review._id, className: "rounded-xl border border-[#4B0D32]/10 p-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex justify-between gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "font-body text-xs font-semibold text-[#4B0D32]" }, review.user?.name || "Verified customer"), /* @__PURE__ */ React.createElement("span", { className: "text-[#C2185B] text-xs" }, "\u2605".repeat(review.rating), "\u2606".repeat(5 - review.rating))), /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs text-[#4B0D32]/70 mt-2" }, review.text), /* @__PURE__ */ React.createElement("span", { className: "inline-block mt-2 rounded-full bg-[#F8E8ED] text-[#C2185B] px-2 py-1 font-body text-[10px]" }, "Verified buyer"))), !currentReviews.length && /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs text-[#4B0D32]/70 mt-3" }, "No reviews for this ", standaloneProduct ? "add-on" : "box", " yet.")), user && (reviewOption?.boxAvailable || reviewOption?.orderType === "standalone_addon") && /* @__PURE__ */ React.createElement("form", { onSubmit: submitBoxReview, className: "mt-5 border-t border-[#4B0D32]/10 pt-4" }, /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs font-semibold text-[#4B0D32] mb-2" }, "You received this item \u2014 share your review"), /* @__PURE__ */ React.createElement("div", { className: "flex gap-1 mb-3" }, [1, 2, 3, 4, 5].map((star) => /* @__PURE__ */ React.createElement("button", { type: "button", key: star, onClick: () => setReviewRating(star), className: `text-lg ${star <= reviewRating ? "text-[#C2185B]" : "text-[#4B0D32]/20"}` }, "\u2605"))), /* @__PURE__ */ React.createElement("textarea", { required: true, maxLength: 1e3, value: reviewText, onChange: (event) => setReviewText(event.target.value), placeholder: `Tell us about this ${standaloneProduct ? "add-on" : "box"}`, className: `${inputClass} min-h-[80px]` }), /* @__PURE__ */ React.createElement("button", { className: "mt-3 bg-[#4B0D32] text-[#FBF7F2] rounded-full px-4 py-2 font-body text-xs" }, "Submit review")))))), /* @__PURE__ */ (cart.length > 0 || standaloneProduct || (!standaloneOnly && box && complete)) && React.createElement("div", { className: "hb-checkout-dock fixed inset-x-0 bottom-0 z-40 border-t border-[#4B0D32]/10 bg-[#FBF7F2]/95 px-4 py-3 shadow-[0_-18px_40px_-28px_rgba(75,13,50,0.55)] ", style: { position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 1e3, width: "100%" }, role: "region", "aria-label": "Checkout summary" }, /* @__PURE__ */ React.createElement("div", { className: "mx-auto flex max-w-7xl items-center justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] font-semibold uppercase tracking-[0.18em] text-[#C2185B]" }, "READY WHEN YOU ARE"), /* @__PURE__ */ React.createElement("div", { className: "mt-1 flex items-baseline gap-2" }, /* @__PURE__ */ React.createElement("span", { className: "truncate font-body text-xs text-[#4B0D32]/65" }, cart.length ? `${cartCount} cart item${cartCount === 1 ? "" : "s"}` : standaloneProduct ? `${standaloneQuantity} item${standaloneQuantity === 1 ? "" : "s"}` : `${selectedProducts.length} selected \xB7 ${count} box${count === 1 ? "" : "es"}`, " "), /* @__PURE__ */ React.createElement("span", { className: "font-display text-lg font-bold text-[#4B0D32]" }, formatKsh(cart.length ? cartTotal : standaloneProduct ? standaloneProduct.standalonePrice * standaloneQuantity : total)))), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: cart.length ? submitCart : submit, disabled: submitting, className: "shrink-0 rounded-full bg-[#4B0D32] px-5 py-3 font-body text-xs font-semibold text-[#FBF7F2] transition hover:bg-[#C2185B] disabled:cursor-not-allowed disabled:opacity-40 sm:px-7 sm:text-sm" }, submitting ? "Opening checkout\u2026" : cart.length ? user ? "Checkout cart" : "Log in to check out" : user ? "Continue to payment" : "Log in to check out", /* @__PURE__ */ React.createElement(ArrowRight, { size: 15, className: "ml-1 inline" })))), cartOpen && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[52] bg-[#4B0D32]/35 ", role: "dialog", "aria-modal": "true", "aria-label": "Shopping cart", onClick: () => setCartOpen(false) }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-[#FBF7F2] shadow-2xl", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-[#4B0D32]/10 px-6 py-5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C2185B]" }, "YOUR CART"), /* @__PURE__ */ React.createElement("h2", { className: "mt-1 font-display text-2xl text-[#4B0D32]" }, "Your ritual, gathered")), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setCartOpen(false), className: "rounded-full p-2 text-[#4B0D32] hover:bg-[#F8E8ED]", "aria-label": "Close cart" }, /* @__PURE__ */ React.createElement(X, { size: 21 }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6" }, cart.length ? /* @__PURE__ */ React.createElement("div", { className: "space-y-3" }, cart.map((item) => /* @__PURE__ */ React.createElement("article", { key: item.cartId, className: `rounded-2xl border p-4 ${selectedCartIds.has(item.cartId) ? "border-[#C2185B] bg-[#F8E8ED]/60" : "border-[#4B0D32]/10 bg-white/60"}` }, /* @__PURE__ */ React.createElement("div", { className: "mb-3 flex items-center gap-3" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: selectedCartIds.has(item.cartId), onChange: () => toggleCartItem(item.cartId), className: "h-4 w-4 accent-[#C2185B]", "aria-label": `Select ${item.name} for checkout` }), /* @__PURE__ */ React.createElement("span", { className: "font-body text-[10px] uppercase tracking-[0.15em] text-[#C2185B]" }, item.itemType === "box" ? "Ritual box" : "Add-on")), /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-3" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "flex items-start gap-3" }, /* @__PURE__ */ React.createElement("img", { src: item.image || cardBox, alt: item.imageAlt || item.name, className: "h-14 w-14 rounded-xl bg-white object-contain" }), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm font-semibold text-[#4B0D32]" }, item.name), /* @__PURE__ */ React.createElement("p", { className: "mt-1 font-body text-xs text-[#4B0D32]/60" }, item.itemType === "box" ? `${item.purchaseType === "three_month" ? "Three-month plan" : "One-time box"}` : "Standalone add-on"), item.itemType === "box" && item.selections?.length ? /* @__PURE__ */ React.createElement("details", { className: "mt-2" }, /* @__PURE__ */ React.createElement("summary", { className: "cursor-pointer font-body text-[11px] font-semibold text-[#C2185B]" }, `View contents (${item.selections.length})`), /* @__PURE__ */ React.createElement("ul", { className: "mt-2 space-y-1 font-body text-[11px] text-[#4B0D32]/70" }, item.selections.map((selection, index) => /* @__PURE__ */ React.createElement("li", { key: `${selection.productId || selection.product || selection.productName}-${index}` }, `${selection.category}: ${selection.productName || "Selected item"}${selection.quantity > 1 ? ` ×${selection.quantity}` : ""}`)))) : null))), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => removeCartItem(item.cartId), className: "text-[#4B0D32]/50 hover:text-[#C2185B]", "aria-label": `Remove ${item.name}` }, /* @__PURE__ */ React.createElement(X, { size: 15 }))), /* @__PURE__ */ React.createElement("div", { className: "mt-3 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-2" }, /* @__PURE__ */ React.createElement("button", { type: "button", disabled: item.itemType === "box", onClick: () => updateCartQuantity(item.cartId, item.quantity - 1), className: "flex h-7 w-7 items-center justify-center rounded-full border border-[#4B0D32]/15 text-[#4B0D32] disabled:opacity-35" }, /* @__PURE__ */ React.createElement(Minus, { size: 13 })), /* @__PURE__ */ React.createElement("span", { className: "min-w-5 text-center font-body text-sm text-[#4B0D32]" }, item.quantity), /* @__PURE__ */ React.createElement("button", { type: "button", disabled: item.itemType === "box", onClick: () => updateCartQuantity(item.cartId, item.quantity + 1), className: "flex h-7 w-7 items-center justify-center rounded-full border border-[#C2185B] text-[#C2185B] disabled:opacity-35" }, /* @__PURE__ */ React.createElement(Plus, { size: 13 }))), /* @__PURE__ */ React.createElement("span", { className: "font-body text-sm font-semibold text-[#C2185B]" }, formatKsh(item.unitPrice * item.quantity)))))) : /* @__PURE__ */ React.createElement("div", { className: "rounded-2xl border border-dashed border-[#C2185B]/30 bg-[#F8E8ED] p-6 text-center" }, /* @__PURE__ */ React.createElement(ShoppingBag, { size: 24, className: "mx-auto text-[#C2185B]" }), /* @__PURE__ */ React.createElement("p", { className: "mt-3 font-display text-xl text-[#4B0D32]" }, "Your cart is waiting"), /* @__PURE__ */ React.createElement("p", { className: "mt-1 font-body text-xs leading-5 text-[#4B0D32]/65" }, "Add your ritual box or a thoughtful add-on to begin."))), /* @__PURE__ */ React.createElement("div", { className: "border-t border-[#4B0D32]/10 p-6" }, /* @__PURE__ */ React.createElement("label", { className: "mb-4 flex items-center gap-2 font-body text-xs text-[#4B0D32]" }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: allCartSelected, onChange: toggleAllCartItems, className: "h-4 w-4 accent-[#C2185B]" }), allCartSelected ? "Deselect all" : "Select all"), /* @__PURE__ */ React.createElement("div", { className: "mb-4 flex items-center justify-between" }, /* @__PURE__ */ React.createElement("span", { className: "font-body text-sm text-[#4B0D32]/70" }, `${selectedCartCount} selected · Selected total`), /* @__PURE__ */ React.createElement("strong", { className: "font-display text-2xl text-[#C2185B]" }, formatKsh(selectedCartTotal))), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: submitCart, disabled: !selectedCartItems.length || submitting, className: "w-full rounded-full bg-[#4B0D32] py-3.5 font-body text-sm text-[#FBF7F2] transition hover:bg-[#C2185B] disabled:cursor-not-allowed disabled:opacity-40" }, submitting ? "Opening Paystack checkout..." : selectedCartItems.length ? "Checkout selected items" : "Select items to checkout", " ", /* @__PURE__ */ React.createElement(ArrowRight, { size: 16, className: "ml-1 inline" }))))), productDrawer && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[55] bg-[#4B0D32]/35 ", role: "dialog", "aria-modal": "true", "aria-label": `${productDrawer.product.name} details`, onClick: () => setProductDrawer(null) }, /* @__PURE__ */ React.createElement("div", { className: "absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-[#FBF7F2] shadow-2xl", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between border-b border-[#4B0D32]/10 px-6 py-5" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-[10px] font-semibold uppercase tracking-[0.2em] text-[#C2185B]" }, "PERSONALIZE YOUR BOX"), /* @__PURE__ */ React.createElement("p", { className: "mt-1 font-display text-2xl text-[#4B0D32]" }, productDrawer.product.name)), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setProductDrawer(null), className: "rounded-full p-2 text-[#4B0D32] hover:bg-[#F8E8ED]", "aria-label": "Close product details" }, /* @__PURE__ */ React.createElement(X, { size: 21 }))), /* @__PURE__ */ React.createElement("div", { className: "flex-1 overflow-y-auto p-6" }, /* @__PURE__ */ React.createElement("div", { className: "flex h-56 items-center justify-center overflow-hidden rounded-2xl bg-white" }, productDrawer.product.photos?.[0] ? /* @__PURE__ */ React.createElement("img", { src: productDrawer.product.photos[0].url, alt: productDrawer.product.photos[0].alt || productDrawer.product.name, className: "h-full w-full object-contain" }) : /* @__PURE__ */ React.createElement("div", { className: "font-body text-sm text-[#4B0D32]/55" }, "Product image coming soon")), /* @__PURE__ */ React.createElement("p", { className: "mt-6 font-body text-sm leading-7 text-[#4B0D32]/75" }, "A considered choice for your Heri Bloom ritual. Select the quantity that feels right, then continue building your box."), /* @__PURE__ */ React.createElement("div", { className: "mt-6 flex items-center justify-between rounded-2xl border border-[#C2185B]/20 bg-white/70 p-4" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm font-semibold text-[#4B0D32]" }, "Quantity"), /* @__PURE__ */ React.createElement("p", { className: "mt-1 font-body text-xs text-[#4B0D32]/55" }, productDrawer.definition.maxSelections === 1 ? "Choose one" : `Up to ${productDrawer.definition.allowRepeat ? productDrawer.definition.maxSelections ?? "your limit" : 1}`)), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => updateDrawerQuantity(drawerSelected - 1), disabled: drawerSelected === 0, className: "flex h-9 w-9 items-center justify-center rounded-full border border-[#4B0D32]/15 text-[#4B0D32] disabled:opacity-35", "aria-label": "Decrease quantity" }, /* @__PURE__ */ React.createElement(Minus, { size: 15 })), /* @__PURE__ */ React.createElement("span", { className: "min-w-6 text-center font-body font-semibold text-[#4B0D32]" }, drawerSelected), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => updateDrawerQuantity(drawerSelected + 1), disabled: productDrawer.product.inventory != null && drawerSelected >= productDrawer.product.inventory, className: "flex h-9 w-9 items-center justify-center rounded-full border border-[#C2185B] text-[#C2185B] disabled:opacity-35", "aria-label": "Increase quantity" }, /* @__PURE__ */ React.createElement(Plus, { size: 15 })))), /* @__PURE__ */ React.createElement("div", { className: "mt-5 flex items-center justify-between font-body text-sm" }, /* @__PURE__ */ React.createElement("span", { className: "text-[#4B0D32]/65" }, "Price adjustment"), /* @__PURE__ */ React.createElement("span", { className: "font-semibold text-[#C2185B]" }, productDrawer.product.priceModifier > 0 ? `+ ${formatKsh(productDrawer.product.priceModifier)}` : "Included"))), /* @__PURE__ */ React.createElement("div", { className: "border-t border-[#4B0D32]/10 p-6" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: continueFromDrawer, className: "w-full rounded-full bg-[#4B0D32] py-3.5 font-body text-sm text-[#FBF7F2] transition hover:bg-[#C2185B]" }, drawerSelected === 0 ? "Add selection to my box" : "Continue building my box", " ", /* @__PURE__ */ React.createElement(ArrowRight, { size: 16, className: "ml-2 inline" })), complete && /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => {
+    addBoxToCart();
+    setProductDrawer(null);
+  }, className: "mt-3 w-full rounded-full border border-[#C2185B] py-3 font-body text-sm text-[#C2185B] transition hover:bg-[#F8E8ED]" }, "Add completed box to cart ", /* @__PURE__ */ React.createElement(ShoppingBag, { size: 15, className: "ml-1 inline" })), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setProductDrawer(null), className: "mt-3 w-full rounded-full border border-[#4B0D32]/15 py-3 font-body text-xs text-[#4B0D32]/70 transition hover:border-[#C2185B] hover:text-[#C2185B]" }, "Keep browsing")))), boxModal && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-[#4B0D32]/40 flex items-end sm:items-center justify-center p-0 sm:p-6", role: "dialog", "aria-modal": "true", "aria-label": `${boxModal.name} details`, onClick: () => setBoxModal(null) }, /* @__PURE__ */ React.createElement("div", { className: "hb-pop w-full sm:max-w-2xl max-h-[94vh] overflow-y-auto bg-[#FBF7F2] rounded-t-3xl sm:rounded-3xl border border-white/70 shadow-2xl", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between px-6 pt-6" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs tracking-[0.2em] text-[#C2185B]" }, "BOX DETAILS"), /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs text-[#4B0D32]/70 mt-1" }, "Click the image to view it larger")), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setBoxModal(null), className: "rounded-full p-2 text-[#4B0D32] hover:bg-white/70", "aria-label": "Close box details" }, /* @__PURE__ */ React.createElement(X, { size: 21 }))), /* @__PURE__ */ React.createElement("div", { className: "p-6" }, /* @__PURE__ */ React.createElement("div", { className: "relative group rounded-2xl overflow-hidden bg-white border border-white/80 cursor-zoom-in", onMouseMove: handleBoxImageMove, onMouseLeave: () => setBoxZoomPosition(null), onClick: () => boxModalDisplayPhoto && setBoxLightbox(boxModalDisplayPhoto), onKeyDown: (event) => {
+    if ((event.key === "Enter" || event.key === " ") && boxModalDisplayPhoto) {
+      event.preventDefault();
+      setBoxLightbox(boxModalDisplayPhoto);
     }
-    const ready = regularSelectable.filter((d) => (picks[d.key] || []).length >= Number(d.minSelections || 0)).length;
-    return (
-      <>
-        <StepHead title="Choose your products" hint="Open each category and pick your favourites. Your choices are saved as you go, and you can come back to any category." />
-        <div className="grid gap-3 sm:grid-cols-2">
-          {regularSelectable.map((d) => {
-            const ids = picks[d.key] || [];
-            const min = Number(d.minSelections || 0);
-            const done = ids.length >= min && ids.length > 0;
-            const thumbs = [...new Set(ids)].slice(0, 3);
-            return (
-              <button type="button" key={d.key} onClick={() => setActiveCategory(d.key)} className="hb-card flex min-h-[92px] items-center gap-4 p-4 text-left" data-selected={done}>
-                <span className="flex w-14 shrink-0 justify-center -space-x-3">
-                  {thumbs.length ? thumbs.map((id) => { const ph = photosOf(byId[id])[0]; return <span key={id} className="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-white">{ph ? <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}</span>; }) : <Bloom size={34} className="text-[#C2185B]/50" />}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[15px] font-medium">{labelOf(d)}</span>
-                  <span className={`mt-0.5 block text-xs ${ids.length < min ? "text-[#C2185B]" : "hb-muted"}`}>{progressText(d, ids.length)}</span>
-                </span>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#4B0D32]/15 text-[#C2185B]">{done ? <Check size={16} /> : <ArrowRight size={16} />}</span>
-              </button>
-            );
-          })}
-        </div>
-        <p className="hb-muted mt-5 text-sm">{ready} of {regularSelectable.length} categories ready</p>
-        {includedProducts.length > 0 && <p className="hb-muted mt-2 text-sm">Always included: {includedProducts.map((p) => p.name).join(", ")}.</p>}
-      </>
-    );
-  };
-
-  const renderAddonsStep = () => (
-    <>
-      <StepHead title="Add ons" hint="A little extra for your ritual. Add to your box, or buy separately and have it delivered with your order." />
-      {!addonProducts.length && <p className="hb-muted text-sm">No add ons are available right now. You can continue.</p>}
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))]">
-        {addonProducts.map((p) => {
-          const n = addonDefinition ? countOf(addonDefinition, p._id) : 0;
-          const photo = photosOf(p)[0];
-          const atLimit = p.inventory != null && n >= p.inventory;
-          return (
-            <div key={p._id} className="hb-card flex flex-col overflow-hidden" data-selected={n > 0}>
-              <div className="relative aspect-square bg-white">
-                {photo ? <img src={photo.url} alt={photo.alt || p.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
-                {photo && <button type="button" className="hb-icon-btn absolute right-2 top-2" aria-label={`View ${p.name} larger`} onClick={() => setLightbox(photo)}><Maximize2 size={15} /></button>}
-              </div>
-              <div className="flex flex-1 flex-col gap-1.5 p-4">
-                <h3 className="text-sm font-medium">{p.name}</h3>
-                {p.description && <p className="hb-muted hb-clamp text-xs leading-5">{p.description}</p>}
-                <p className="text-xs font-medium text-[#C2185B]">{formatKsh(p.priceModifier)} in your box</p>
-                {p.standalonePrice != null && <p className="hb-muted text-xs">{formatKsh(p.standalonePrice)} separately</p>}
-                {p.inventory != null && p.inventory > 0 && p.inventory <= 5 && <p className="text-xs text-[#C2185B]">Only {p.inventory} left</p>}
-                <div className="mt-auto space-y-2 pt-3">
-                  {n === 0 ? (
-                    <button type="button" className="hb-btn-outline w-full" disabled={p.inventory != null && p.inventory < 1} onClick={() => pick(addonDefinition, p._id)}>{p.inventory != null && p.inventory < 1 ? "Sold out" : "Add to my box"}</button>
-                  ) : (
-                    <div className="flex items-center justify-center gap-4">
-                      <button type="button" className="hb-qbtn" onClick={() => unpick(addonDefinition, p._id)} aria-label={`Remove one ${p.name}`}><Minus size={16} /></button>
-                      <span className="min-w-6 text-center text-sm font-semibold" aria-live="polite">{n}</span>
-                      <button type="button" className="hb-qbtn" disabled={atLimit} onClick={() => pick(addonDefinition, p._id)} aria-label={`Add one more ${p.name}`}><Plus size={16} /></button>
-                    </div>
-                  )}
-                  {p.standalonePrice != null && <button type="button" className="hb-link w-full text-center" onClick={() => addStandaloneToCart(p, 1)}>Buy separately</button>}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </>
-  );
-
-  const renderIssues = () => issues.length > 0 && (
-    <div role="alert" className="mb-6 rounded-2xl border border-[#C2185B]/30 bg-[#F8E8ED] p-4">
-      <p className="text-sm font-semibold">A few details need your attention</p>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">{issues.map((m, i) => <li key={`${i}-${m}`}>{m}</li>)}</ul>
-    </div>
-  );
-
-  const renderPolicyCheck = () => needsPolicy && (
-    <label className="mt-6 flex items-start gap-3 rounded-2xl border border-[#C2185B]/25 bg-[#F8E8ED] p-4 text-sm leading-6">
-      <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} className="mt-1 h-5 w-5 accent-[#C2185B]" />
-      <span>I understand that cancellation is only allowed inside the change window. Unshipped boxes are refunded, and delivered boxes are repriced at the normal one time price.</span>
-    </label>
-  );
-
-  const renderDeliveryStep = () => (
-    <>
-      {mode === "cart" && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#C2185B]/25 bg-[#F8E8ED] p-4">
-          <p className="text-sm">You are checking out your cart ({selectedCartCount} item{selectedCartCount === 1 ? "" : "s"}).</p>
-          <button type="button" className="hb-link" onClick={() => { setMode("box"); setIssues([]); }}>Back to my box</button>
-        </div>
-      )}
-      <StepHead title="Delivery and gift" hint="Tell us where and when. We will keep you updated along the way." />
-      {renderIssues()}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Phone number" className="sm:col-span-2" hint="We use this for delivery. Kenyan numbers are saved with +254.">
-          <input className="hb-input" inputMode="tel" autoComplete="tel" placeholder="0712 345 678" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => setPhone(normalizePhone(phone))} />
-        </Field>
-        <Field label="Street and building" className="sm:col-span-2">
-          <input className="hb-input" autoComplete="street-address" placeholder="Street, building, apartment" value={address.street} onChange={(e) => setAddress({ ...address, street: e.target.value })} />
-        </Field>
-        <Field label="City or town"><input className="hb-input" autoComplete="address-level2" placeholder="Nairobi" value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} /></Field>
-        <Field label="County">
-          <input className="hb-input" list="hb-counties" placeholder="Choose or type" value={address.county} onChange={(e) => setAddress({ ...address, county: e.target.value })} />
-          <datalist id="hb-counties">{COUNTIES.map((c) => <option key={c} value={c} />)}</datalist>
-        </Field>
-        <Field label="Preferred delivery date" className="sm:col-span-2" hint={settings?.earliestBookableDate ? `Earliest available: ${new Date(settings.earliestBookableDate).toLocaleDateString()}` : undefined}>
-          <input className="hb-input" type="date" min={settings?.earliestBookableDate ? toISODate(settings.earliestBookableDate) : undefined} value={firstDeliveryDate} onChange={(e) => setFirstDeliveryDate(e.target.value)} />
-        </Field>
-        <Field label="Notes for the courier (optional)" className="sm:col-span-2">
-          <textarea className="hb-input min-h-[88px]" placeholder="Gate code, landmark, best time to call" value={address.deliveryNotes} onChange={(e) => setAddress({ ...address, deliveryNotes: e.target.value })} />
-        </Field>
-      </div>
-      <label className="mt-4 flex items-center gap-3 text-sm"><input type="checkbox" className="h-5 w-5 accent-[#C2185B]" checked={discreet} onChange={(e) => setDiscreet(e.target.checked)} /> Use discreet packaging</label>
-
-      <fieldset className="mt-8 rounded-2xl border border-[#4B0D32]/10 bg-white p-5">
-        <legend className="px-2 text-sm font-semibold">How should we send updates?</legend>
-        <label className="flex items-center gap-3 text-sm"><input type="checkbox" className="h-5 w-5 accent-[#C2185B]" checked={notificationPreferences.email} onChange={(e) => setNotificationPreferences((c) => ({ ...c, email: e.target.checked }))} /> Email updates</label>
-        <label className="mt-3 flex items-center gap-3 text-sm"><input type="checkbox" className="h-5 w-5 accent-[#C2185B]" checked={notificationPreferences.whatsapp} onChange={(e) => setNotificationPreferences((c) => ({ ...c, whatsapp: e.target.checked }))} /> WhatsApp updates</label>
-      </fieldset>
-
-      <div className="mt-8 grid items-start gap-5 sm:grid-cols-2">
-        <div>
-          <Field label="Card message (optional)" hint={`${cardMessage.length} of 240 characters`}>
-            <textarea className="hb-input min-h-[120px]" maxLength={240} placeholder="A few kind words for the card" value={cardMessage} onChange={(e) => setCardMessage(e.target.value)} />
-          </Field>
-          <label className="mt-4 flex items-center gap-3 text-sm"><input type="checkbox" className="h-5 w-5 accent-[#C2185B]" checked={gift.isGift} onChange={(e) => setGift({ ...gift, isGift: e.target.checked })} /> This is a gift</label>
-          {gift.isGift && (
-            <div className="mt-3 grid gap-3">
-              <Field label="Recipient name"><input className="hb-input" value={gift.recipientName} onChange={(e) => setGift({ ...gift, recipientName: e.target.value })} /></Field>
-              <Field label="Recipient phone"><input className="hb-input" inputMode="tel" value={gift.recipientPhone} onChange={(e) => setGift({ ...gift, recipientPhone: e.target.value })} onBlur={() => setGift((g) => ({ ...g, recipientPhone: normalizePhone(g.recipientPhone) }))} /></Field>
-            </div>
-          )}
-        </div>
-        <div className="hb-giftcard" aria-label="Card preview">
-          <Bloom size={32} className="mx-auto text-[#C2185B]" />
-          <p className="msg mt-3">{cardMessage || "Your message will appear here."}</p>
-          {gift.isGift && gift.recipientName && <p className="hb-muted mt-3 text-xs">For {gift.recipientName}</p>}
-        </div>
-      </div>
-      {mode === "cart" && renderPolicyCheck()}
-    </>
-  );
-
-  const renderReviewStep = () => {
-    const uniqueSelected = [...new Set(selections.map((s) => s.productId))];
-    const groupedByCategory = regularSelectable.map((d) => ({ d, ids: picks[d.key] || [] })).filter((g) => g.ids.length);
-    const addonIds = addonDefinition ? picks[addonDefinition.key] || [] : [];
-    return (
-      <>
-        <StepHead title="Review and pay" hint="One last look. Use Edit to change anything." />
-        {renderIssues()}
-        <ReviewRow title="Box and plan" onEdit={() => goTo(1)}>{box?.name}, {purchaseType === "three_month" ? "three month plan" : "one time purchase"}</ReviewRow>
-        <ReviewRow title="Your products" onEdit={() => { setWizardStep(3); setActiveCategory(null); }}>
-          {groupedByCategory.length ? groupedByCategory.map(({ d, ids }) => (
-            <p key={d.key}><span className="font-medium text-[#4B0D32]">{labelOf(d)}:</span> {[...new Set(ids)].map((id) => `${byId[id]?.name || "Item"}${ids.filter((x) => x === id).length > 1 ? ` x${ids.filter((x) => x === id).length}` : ""}`).join(", ")}</p>
-          )) : "No products chosen yet."}
-          {includedProducts.length > 0 && <p>Always included: {includedProducts.map((p) => p.name).join(", ")}</p>}
-        </ReviewRow>
-        {addonIds.length > 0 && <ReviewRow title="Add ons" onEdit={() => goTo(4)}>{[...new Set(addonIds)].map((id) => `${byId[id]?.name}${addonIds.filter((x) => x === id).length > 1 ? ` x${addonIds.filter((x) => x === id).length}` : ""}`).join(", ")}</ReviewRow>}
-        <ReviewRow title="Delivery" onEdit={() => goTo(5)}>
-          <p>{normalizePhone(phone)}</p>
-          <p>{[address.street, address.city, address.county].filter(Boolean).join(", ")}</p>
-          <p>Preferred date: {firstDeliveryDate || "Not chosen"}</p>
-          {discreet && <p>Discreet packaging</p>}
-          {address.deliveryNotes && <p>Notes: {address.deliveryNotes}</p>}
-        </ReviewRow>
-        {(gift.isGift || cardMessage) && <ReviewRow title="Gift and card" onEdit={() => goTo(5)}>{gift.isGift && <p>For {gift.recipientName}, {gift.recipientPhone}</p>}{cardMessage && <p className="italic">{cardMessage}</p>}</ReviewRow>}
-        <div className="rounded-2xl bg-white p-5">
-          <TotalRow label={purchaseType === "three_month" ? "Three month plan, per box" : "Box"} value={formatKsh(box?.price)} />
-          {extras > 0 && <TotalRow label="Paid extras" value={formatKsh(extras)} />}
-          {discount > 0 && <TotalRow label={`Plan discount (${discountPercent}%)`} value={`${formatKsh(discount)} off`} accent />}
-          <TotalRow label={`${count} box${count === 1 ? "" : "es"} total`} value={formatKsh(total)} strong />
-        </div>
-        {renderPolicyCheck()}
-        <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#C2185B]/20 bg-[#F8E8ED] p-4">
-          <Lock size={18} className="mt-0.5 shrink-0 text-[#C2185B]" />
-          <div><p className="text-sm font-semibold">Pay securely with Paystack</p><p className="hb-muted mt-0.5 text-xs leading-5">Card, M Pesa or bank transfer. You will be taken to Paystack to complete your payment.</p></div>
-        </div>
-        <p className="mt-4 flex items-center gap-2 text-sm text-[#C2185B]"><Heart size={15} fill="currentColor" /> {IMPACT_LINE}</p>
-        <button type="button" className="hb-btn-outline mt-5" disabled={!box || !complete} onClick={addBoxToCart}>Add this box to my cart <ShoppingBag size={16} /></button>
-
-        <section className="mt-10 border-t border-[#4B0D32]/10 pt-6">
-          <div className="flex items-baseline justify-between gap-3">
-            <h3 className="font-display text-xl">Reviews for {box?.name}</h3>
-            {reviewSummary.count > 0 && <span className="text-sm text-[#C2185B]">{reviewSummary.average} out of 5 ({reviewSummary.count})</span>}
-          </div>
-          <div className="mt-4 space-y-3">
-            {boxReviews.slice(0, 3).map((r) => (
-              <article key={r._id} className="rounded-2xl border border-[#4B0D32]/10 bg-white p-4">
-                <div className="flex justify-between gap-2"><span className="text-sm font-semibold">{r.user?.name || "Verified customer"}</span><span className="text-sm text-[#C2185B]" aria-label={`${r.rating} out of 5`}>{"\u2605".repeat(r.rating)}{"\u2606".repeat(5 - r.rating)}</span></div>
-                <p className="hb-muted mt-2 text-sm leading-6">{r.text}</p>
-              </article>
-            ))}
-            {!boxReviews.length && <p className="hb-muted text-sm">No reviews for this box yet.</p>}
-          </div>
-          {user && reviewOption?.boxAvailable && (
-            <form onSubmit={submitReview} className="mt-5 rounded-2xl border border-[#4B0D32]/10 bg-white p-4">
-              <p className="text-sm font-semibold">You received this box. Share your review.</p>
-              <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Rating">{[1, 2, 3, 4, 5].map((s) => <button type="button" key={s} role="radio" aria-checked={s === reviewRating} aria-label={`${s} star${s === 1 ? "" : "s"}`} onClick={() => setReviewRating(s)} className={`h-11 w-11 text-2xl ${s <= reviewRating ? "text-[#C2185B]" : "text-[#4B0D32]/20"}`}>{"\u2605"}</button>)}</div>
-              <textarea required maxLength={1000} value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Tell us about this box" className="hb-input min-h-[90px]" aria-label="Your review" />
-              <button className="hb-btn mt-3">Submit review</button>
-            </form>
-          )}
-        </section>
-
-        <section className="mt-8 border-t border-[#4B0D32]/10 pt-4">
-          <h3 className="font-display text-xl">Customer care</h3>
-          {[["shipping", "Shipping and delivery", settings?.legal?.shipping], ["returns", "Returns, refunds and cancellations", settings?.legal?.returns]].map(([key, title, policy]) => (
-            <div key={key} className="border-b border-[#4B0D32]/10 last:border-0">
-              <button type="button" aria-expanded={openPolicy === key} onClick={() => setOpenPolicy((c) => (c === key ? "" : key))} className="flex min-h-[48px] w-full items-center justify-between gap-3 text-left text-sm font-semibold">
-                {title}<ChevronDown size={16} className={`shrink-0 transition-transform ${openPolicy === key ? "rotate-180 text-[#C2185B]" : ""}`} />
-              </button>
-              {openPolicy === key && (
-                <div className="pb-4">
-                  <p className="hb-muted text-sm leading-6">{policy?.summary}</p>
-                  <p className="hb-muted mt-2 whitespace-pre-line text-sm leading-6">{policy?.body}</p>
-                  <Link to={`/policies/${key}`} className="hb-link mt-1 inline-flex items-center gap-1">Read the full policy <ArrowRight size={13} /></Link>
-                </div>
-              )}
-            </div>
-          ))}
-        </section>
-      </>
-    );
-  };
-
-  const renderStep = () => {
-    if (mode === "cart") return renderDeliveryStep();
-    return [renderBoxStep, renderPlanStep, renderProductsStep, renderAddonsStep, renderDeliveryStep, renderReviewStep][wizardStep - 1]();
-  };
-
-  /* ---------- summary (sidebar on desktop, sheet on mobile) ---------- */
-  const renderSummary = () => {
-    if (mode === "cart") return (
-      <div>
-        <h2 className="font-display text-2xl">Your cart</h2>
-        <ul className="mt-4 space-y-3">
-          {selectedCartItems.map((item) => (
-            <li key={item.cartId} className="flex items-center gap-3">
-              <img src={item.image || cardBox} alt="" loading="lazy" className="h-12 w-12 rounded-xl bg-white object-contain" />
-              <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{item.name}</p><p className="hb-muted text-xs">Qty {item.quantity}</p></div>
-              <span className="text-sm">{formatKsh(item.unitPrice * item.quantity)}</span>
-            </li>
-          ))}
-        </ul>
-        {!selectedCartItems.length && <p className="hb-muted mt-4 text-sm">No items selected.</p>}
-        <TotalRow strong label={`${selectedCartCount} item${selectedCartCount === 1 ? "" : "s"}`} value={formatKsh(selectedCartTotal)} />
-      </div>
-    );
-    const photo = photosOf(box)[0];
-    const addonIds = addonDefinition ? picks[addonDefinition.key] || [] : [];
-    return (
-      <div>
-        <div className="flex items-center gap-4">
-          <img src={photo?.url || cardBox} alt="" loading="lazy" className="h-16 w-16 rounded-2xl bg-white object-contain" />
-          <div><p className="hb-muted text-xs">Your ritual box</p><h2 className="font-display text-2xl leading-tight">{box?.name || "Choose a box"}</h2><p className="hb-muted text-xs">{purchaseType === "three_month" ? "Three month plan" : "One time purchase"}</p></div>
-        </div>
-        <ul className="mt-5 space-y-2.5">
-          {regularSelectable.map((d) => {
-            const ids = picks[d.key] || [];
-            const min = Number(d.minSelections || 0);
-            const filled = ids.length >= min && ids.length > 0;
-            return (
-              <li key={d.key}>
-                <button type="button" onClick={() => { if (wizardStep !== 3 || mode !== "box") { setWizardStep(3); setMaxStep((m) => Math.max(m, 3)); } setActiveCategory(d.key); setSummaryOpen(false); }} className={`flex w-full items-center justify-between gap-3 rounded-2xl border p-3 text-left ${filled ? "border-[#C2185B]/40 bg-white" : "border-dashed border-[#4B0D32]/25"}`}>
-                  <span><span className="block text-sm font-medium">{labelOf(d)}</span><span className={`block text-xs ${ids.length < min ? "text-[#C2185B]" : "hb-muted"}`}>{ids.length ? ids.length >= min ? `${ids.length} chosen` : `${ids.length} of ${min} chosen` : min ? `0 of ${min} chosen` : "Optional"}</span></span>
-                  <span className="flex -space-x-2">{[...new Set(ids)].slice(0, 3).map((id) => { const ph = photosOf(byId[id])[0]; return <span key={id} className="h-9 w-9 overflow-hidden rounded-full border-2 border-white bg-white">{ph && <img src={ph.url} alt={byId[id]?.name || ""} className="h-full w-full object-cover" />}</span>; })}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        {addonIds.length > 0 && <p className="hb-muted mt-3 text-xs leading-5">Add ons: {[...new Set(addonIds)].map((id) => byId[id]?.name).filter(Boolean).join(", ")}</p>}
-        {includedProducts.length > 0 && <p className="hb-muted mt-2 text-xs leading-5">Always included: {includedProducts.map((p) => p.name).join(", ")}</p>}
-        <div className="mt-5 border-t border-[#4B0D32]/10 pt-3">
-          <TotalRow label="Box" value={formatKsh(box?.price)} />
-          {extras > 0 && <TotalRow label="Paid extras" value={formatKsh(extras)} />}
-          {discount > 0 && <TotalRow label={`Plan discount (${discountPercent}%)`} value={`${formatKsh(discount)} off`} accent />}
-          <TotalRow strong label={`${count} box${count === 1 ? "" : "es"} total`} value={formatKsh(total)} />
-        </div>
-        <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-[#C2185B]"><Heart size={13} fill="currentColor" className="mt-0.5 shrink-0" /> {IMPACT_LINE}</p>
-      </div>
-    );
-  };
-
-  /* ---------- footer actions ---------- */
-  const onBack = () => {
-    if (mode === "cart") { setMode("box"); return; }
-    if (wizardStep === 3 && activeCategory) return setActiveCategory(null);
-    goTo(wizardStep - 1);
-  };
-  const onPrimary = () => {
-    if (mode === "cart") return payCart();
-    if (wizardStep === 3 && activeCategory) return setActiveCategory(null);
-    if (wizardStep === 6) return payBox();
-    goTo(wizardStep + 1);
-  };
-  const addonsPicked = addonDefinition ? (picks[addonDefinition.key] || []).length : 0;
-  const primaryLabel = mode === "cart" ? (submitting ? "Opening Paystack" : user ? "Pay for selected items" : "Log in to pay")
-    : wizardStep === 6 ? (submitting ? "Opening Paystack" : user ? "Confirm and pay" : "Log in to pay")
-    : wizardStep === 3 && activeDefinition ? `Done with ${labelOf(activeDefinition)}`
-    : wizardStep === 4 && !addonsPicked ? "Skip add ons" : "Continue";
-  const footerTotal = mode === "cart" ? selectedCartTotal : total;
-  const showAside = mode === "cart" || wizardStep < 6;
-  const stepName = mode === "cart" ? "Checkout" : STEPS[wizardStep - 1];
-
-  /* ---------- page ---------- */
-  return (
-    <MotionConfig reducedMotion="user">
-      <div className="hb">
-        <style>{STYLES}</style>
-        <div ref={topRef} className="mx-auto max-w-7xl scroll-mt-4 px-4 pb-44 pt-8 sm:px-6 md:pt-12">
-          <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="flex items-center gap-2 text-sm font-medium text-[#C2185B]"><Bloom size={22} /> The Heri Bloom ritual</p>
-              <h1 className="font-display mt-2 text-4xl md:text-5xl">Build your ritual box</h1>
-              <p className="hb-muted mt-2 max-w-xl text-sm leading-6">Choose your box, curate every category, and have it delivered with care.</p>
-              {!user && <p className="mt-3 text-sm"><Link to="/login" state={{ from: "/shop" }} className="hb-link">Log in</Link> <span className="hb-muted">to save your progress and check out faster.</span></p>}
-            </div>
-            <button type="button" onClick={() => setCartOpen(true)} className="hb-btn-quiet relative" aria-label={`Open cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`}>
-              <ShoppingBag size={18} /> Cart
-              {cartCount > 0 && <span className="hb-badge absolute -right-1 -top-1 !h-6 !w-6 text-xs font-semibold">{cartCount}</span>}
-            </button>
-          </header>
-
-          {notice && (
-            <div role="status" className="hb-panel mb-6 flex items-start justify-between gap-3 p-4 text-sm">
-              <p className="leading-6">{notice}</p>
-              <button type="button" className="hb-qbtn shrink-0 !border-[#4B0D32]/20 !text-[#4B0D32]" aria-label="Dismiss message" onClick={() => setNotice("")}><X size={16} /></button>
-            </div>
-          )}
-
-          {mode === "box" && (
-            <div className="mb-6 px-1">
-              <Stepper step={wizardStep} maxStep={maxStep} onGo={goTo} />
-              <p className="mt-3 text-center text-xs font-medium text-[#C2185B] md:hidden">Step {wizardStep} of 6: {stepName}</p>
-            </div>
-          )}
-
-          <div className={`grid items-start gap-8 ${showAside ? "lg:grid-cols-[minmax(0,1fr)_380px]" : ""}`}>
-            <main className="hb-panel p-6 md:p-10">
-              <AnimatePresence mode="wait">
-                <motion.div key={`${mode}-${wizardStep}-${activeCategory || ""}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-                  {renderStep()}
-                </motion.div>
-              </AnimatePresence>
-            </main>
-            {showAside && <aside className="hb-panel sticky top-6 hidden p-6 lg:block" aria-label="Order summary">{renderSummary()}</aside>}
-          </div>
-        </div>
-
-        {/* One footer, one primary action */}
-        <div className="hb-footer" role="region" aria-label="Order navigation">
-          <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
-            <button type="button" className="hb-btn-quiet" onClick={onBack} disabled={mode === "box" && wizardStep === 1 && !activeCategory}><ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span></button>
-            <button type="button" onClick={() => setSummaryOpen(true)} className="min-w-0 flex-1 text-left lg:pointer-events-none" aria-label="View order summary">
-              <span className="hb-muted block text-xs">{mode === "cart" ? `${selectedCartCount} cart item${selectedCartCount === 1 ? "" : "s"}` : `${selections.length} selected, ${count} box${count === 1 ? "" : "es"}`} <span className="text-[#C2185B] lg:hidden">View summary</span></span>
-              <span className="font-display text-xl">{formatKsh(footerTotal)}</span>
-            </button>
-            <button type="button" className="hb-btn" onClick={onPrimary} disabled={submitting || (mode === "box" && wizardStep === 1 && !boxId)}>{primaryLabel} {!submitting && <ArrowRight size={16} />}</button>
-          </div>
-        </div>
-
-        {/* Mobile summary sheet */}
-        <Modal open={summaryOpen} onClose={() => setSummaryOpen(false)} label="Order summary" variant="sheet">
-          <div className="p-6 pt-8">{renderSummary()}</div>
-        </Modal>
-
-        {/* Box preview */}
-        <Modal open={Boolean(boxModal)} onClose={() => setBoxModal(null)} label={`${boxModal?.name || "Box"} details`}>
-          {boxModal && (() => {
-            const photos = photosOf(boxModal);
-            const shown = photos[boxModalImage] || photos[0] || { url: cardBox, alt: boxModal.name };
-            return (
-              <div className="p-6 pt-16">
-                <button type="button" className="relative block w-full overflow-hidden rounded-2xl bg-white" onClick={() => setLightbox(shown)} aria-label="View image larger">
-                  <img src={shown.url} alt={shown.alt || boxModal.name} className="h-72 w-full object-contain sm:h-[24rem]" />
-                  <span className="absolute bottom-3 right-3 rounded-full bg-[#4B0D32]/70 px-3 py-1 text-xs text-[#FBF7F2]">Tap to enlarge</span>
-                </button>
-                {photos.length > 1 && (
-                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                    {photos.map((ph, i) => <button type="button" key={`${ph.url}-${i}`} onClick={() => setBoxModalImage(i)} aria-label={`Show photo ${i + 1}`} className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white ${i === boxModalImage ? "border-[#C2185B]" : "border-[#4B0D32]/10"}`}><img src={ph.url} alt="" loading="lazy" className="h-full w-full object-contain" /></button>)}
-                  </div>
-                )}
-                <h2 className="font-display mt-6 text-3xl">{boxModal.name}</h2>
-                <p className="hb-muted mt-2 text-sm">{boxModal.tagline}</p>
-                <p className="mt-4 text-sm leading-6">{boxModal.description || "A thoughtful care box with carefully chosen essentials for your routine."}</p>
-                <p className="mt-5 font-semibold text-[#C2185B]">{formatKsh(boxModal.price)} <span className="hb-muted font-normal">per box</span></p>
-                <button type="button" className="hb-btn mt-5 w-full" onClick={() => { setBoxId(boxModal._id); setBoxModal(null); goTo(2); }}>Choose this box <ArrowRight size={16} /></button>
-              </div>
-            );
-          })()}
-        </Modal>
-
-        {/* Cart */}
-        <Modal open={cartOpen} onClose={() => setCartOpen(false)} label="Shopping cart" variant="right">
-          <div className="border-b border-[#4B0D32]/10 px-6 py-5 pr-20"><h2 className="font-display text-2xl">Your cart</h2></div>
-          <div className="flex-1 overflow-y-auto p-6">
-            {cart.length ? (
-              <ul className="space-y-3">
-                {cart.map((item) => (
-                  <li key={item.cartId} className={`rounded-2xl border p-4 ${selectedCartIds.has(item.cartId) ? "border-[#C2185B] bg-[#F8E8ED]/60" : "border-[#4B0D32]/10 bg-white"}`}>
-                    <div className="flex items-start gap-3">
-                      <input type="checkbox" checked={selectedCartIds.has(item.cartId)} onChange={() => toggleCartItem(item.cartId)} className="mt-1 h-5 w-5 accent-[#C2185B]" aria-label={`Select ${item.name} for checkout`} />
-                      <img src={item.image || cardBox} alt={item.imageAlt || item.name} loading="lazy" className="h-14 w-14 rounded-xl bg-white object-contain" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{item.name}</p>
-                        <p className="hb-muted text-xs">{item.itemType === "box" ? (item.purchaseType === "three_month" ? "Three month plan" : "One time box") : "Add on"}</p>
-                        {item.itemType === "box" && item.selections?.length > 0 && (
-                          <details className="mt-1"><summary className="cursor-pointer text-xs font-medium text-[#C2185B]">View contents ({item.selections.length})</summary>
-                            <ul className="hb-muted mt-1 space-y-0.5 text-xs">{item.selections.map((s, i) => <li key={`${s.productId}-${i}`}>{s.productName}</li>)}</ul>
-                          </details>
-                        )}
-                      </div>
-                      <button type="button" onClick={() => removeCartItem(item.cartId)} className="flex h-10 w-10 items-center justify-center rounded-full text-[#4B0D32]/60 hover:text-[#C2185B]" aria-label={`Remove ${item.name}`}><X size={16} /></button>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <button type="button" className="hb-qbtn" disabled={item.itemType === "box" || item.quantity <= 1} onClick={() => updateCartQuantity(item.cartId, item.quantity - 1)} aria-label="Decrease quantity"><Minus size={14} /></button>
-                        <span className="min-w-6 text-center text-sm">{item.quantity}</span>
-                        <button type="button" className="hb-qbtn" disabled={item.itemType === "box"} onClick={() => updateCartQuantity(item.cartId, item.quantity + 1)} aria-label="Increase quantity"><Plus size={14} /></button>
-                      </div>
-                      <span className="text-sm font-semibold text-[#C2185B]">{formatKsh(item.unitPrice * item.quantity)}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-[#C2185B]/30 bg-[#F8E8ED] p-8 text-center">
-                <Bloom size={48} className="mx-auto text-[#C2185B]" />
-                <p className="font-display mt-3 text-xl">Your cart is empty</p>
-                <p className="hb-muted mt-1 text-sm">Finish a box or add a thoughtful extra to begin.</p>
-              </div>
-            )}
-          </div>
-          <div className="border-t border-[#4B0D32]/10 p-6">
-            {cart.length > 0 && <label className="mb-4 flex items-center gap-3 text-sm"><input type="checkbox" className="h-5 w-5 accent-[#C2185B]" checked={allCartSelected} onChange={() => setSelectedCartIds(allCartSelected ? new Set() : new Set(cart.map((i) => i.cartId)))} /> {allCartSelected ? "Deselect all" : "Select all"}</label>}
-            <div className="mb-4 flex items-baseline justify-between"><span className="hb-muted text-sm">{selectedCartCount} selected</span><strong className="font-display text-2xl text-[#C2185B]">{formatKsh(selectedCartTotal)}</strong></div>
-            <button type="button" className="hb-btn w-full" disabled={!selectedCartItems.length} onClick={startCartCheckout}>Checkout selected items <ArrowRight size={16} /></button>
-            <p className="hb-muted mt-3 text-center text-xs">Delivery details come next. Items stay in your cart until payment is confirmed.</p>
-            {cart.length > 0 && cartTotalAll !== selectedCartTotal && <p className="hb-muted mt-1 text-center text-xs">Full cart value {formatKsh(cartTotalAll)}</p>}
-          </div>
-        </Modal>
-
-        {/* Enlarged image, works with a tap on any device */}
-        <Modal open={Boolean(lightbox)} onClose={() => setLightbox(null)} label="Enlarged image" variant="lightbox">
-          {lightbox && <img src={lightbox.url} alt={lightbox.alt || "Enlarged product"} className="max-h-[88vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl" />}
-        </Modal>
-      </div>
-    </MotionConfig>
-  );
+  }, role: boxModalDisplayPhoto ? "button" : void 0, tabIndex: boxModalDisplayPhoto ? 0 : void 0 }, /* @__PURE__ */ React.createElement("img", { src: boxModalDisplayPhoto.url, alt: boxModalDisplayPhoto.alt || boxModal.name, className: "block w-full h-72 sm:h-[25rem] object-contain" }), boxZoomPosition && boxModalDisplayPhoto && /* @__PURE__ */ React.createElement("div", { "aria-hidden": "true", className: "absolute inset-0 pointer-events-none", style: { backgroundImage: `url(${boxModalDisplayPhoto.url})`, backgroundRepeat: "no-repeat", backgroundSize: "250% 250%", backgroundPosition: `${boxZoomPosition.x}% ${boxZoomPosition.y}%` } }), boxModalDisplayPhoto && /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-3 right-3 rounded-full bg-[#4B0D32]/60 text-[#FBF7F2] px-3 py-1 font-body text-[10px]" }, "Click to enlarge")), boxModalPhotos.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex gap-3 mt-4 overflow-x-auto pb-1" }, boxModalPhotos.map((photo, index) => /* @__PURE__ */ React.createElement("button", { type: "button", key: `${photo.url}-${index}`, onClick: () => {
+    setBoxModalImage(index);
+    setBoxZoomPosition(null);
+  }, className: `shrink-0 w-20 h-16 rounded-xl overflow-hidden bg-white border-2 ${boxModalImage === index ? "border-[#C2185B]" : "border-[#4B0D32]/10"}` }, /* @__PURE__ */ React.createElement("img", { src: photo.url, alt: photo.alt || boxModal.name, className: "w-full h-full object-contain" })))), /* @__PURE__ */ React.createElement("h2", { className: "font-display font-bold text-3xl text-[#4B0D32] mt-6" }, boxModal.name), /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm text-[#4B0D32]/70 mt-2" }, boxModal.tagline || "A thoughtful care box designed around your needs."), /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm leading-6 text-[#4B0D32] mt-4" }, boxModal.description || "A thoughtful care box designed around your needs, with carefully selected essentials for your routine."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between mt-5" }, /* @__PURE__ */ React.createElement("span", { className: "font-body text-[#C2185B] font-semibold" }, formatKsh(boxModal.price), " ", /* @__PURE__ */ React.createElement("span", { className: "text-[#4B0D32]/70 font-normal" }, "/ box")), /* @__PURE__ */ React.createElement("span", { className: "font-body text-xs text-[#4B0D32]/70" }, "Photos can be enlarged")), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => {
+    setBoxId(boxModal._id);
+    setBoxModal(null);
+    goToWizardStep(2);
+  }, className: "w-full mt-6 bg-[#4B0D32] text-[#FBF7F2] rounded-full py-3 font-body" }, "Make your selection ", /* @__PURE__ */ React.createElement(ArrowRight, { size: 16, className: "inline ml-2" }))))), productLightbox && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[60] bg-[#4B0D32]/80 flex items-center justify-center p-4 sm:p-10", role: "dialog", "aria-modal": "true", "aria-label": `Enlarged ${productLightbox.alt || "product"} image`, onClick: () => setProductLightbox(null) }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setProductLightbox(null), className: "absolute top-5 right-5 rounded-full bg-white/90 text-[#4B0D32] p-3 shadow-lg", "aria-label": "Close enlarged product image" }, /* @__PURE__ */ React.createElement(X, { size: 24 })), /* @__PURE__ */ React.createElement("div", { className: "max-w-6xl max-h-full", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ React.createElement("img", { src: productLightbox.url, alt: productLightbox.alt || "Product", className: "max-h-[88vh] max-w-[92vw] object-contain rounded-2xl shadow-2xl" }))), boxLightbox && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[60] bg-[#4B0D32]/80 flex items-center justify-center p-4 sm:p-10", role: "dialog", "aria-modal": "true", "aria-label": "Enlarged box image", onClick: () => setBoxLightbox(null) }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setBoxLightbox(null), className: "absolute top-5 right-5 rounded-full bg-white/90 text-[#4B0D32] p-3 shadow-lg", "aria-label": "Close enlarged box image" }, /* @__PURE__ */ React.createElement(X, { size: 24 })), /* @__PURE__ */ React.createElement("div", { className: "max-w-6xl max-h-full", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ React.createElement("img", { src: boxLightbox.url, alt: boxLightbox.alt || boxModal?.name || "Box", className: "max-h-[88vh] max-w-[92vw] object-contain rounded-2xl shadow-2xl" }))), addonModal && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-50 bg-[#4B0D32]/40 flex items-end sm:items-center justify-center p-0 sm:p-6", role: "dialog", "aria-modal": "true", "aria-label": `${addonModal.name} details`, onClick: () => setAddonModal(null) }, /* @__PURE__ */ React.createElement("div", { className: "hb-pop w-full sm:max-w-2xl max-h-[94vh] overflow-y-auto bg-[#FBF7F2] rounded-t-3xl sm:rounded-3xl border border-white/70 shadow-2xl", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-start gap-4 px-6 pt-6" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setAddonModal(null), className: "rounded-full p-2 text-[#4B0D32] hover:bg-white/70", "aria-label": "Close Add-on details" }, /* @__PURE__ */ React.createElement(X, { size: 21 })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs tracking-[0.2em] text-[#C2185B]" }, "ADD-ON DETAILS"), /* @__PURE__ */ React.createElement("p", { className: "font-body text-xs text-[#4B0D32]/70 mt-1" }, "Click the image to view it larger"))), /* @__PURE__ */ React.createElement("div", { className: "p-6" }, /* @__PURE__ */ React.createElement("div", { className: "relative group rounded-2xl overflow-hidden bg-[#F8E8ED] border border-white/80 cursor-zoom-in", onMouseMove: handleAddonImageMove, onMouseLeave: () => setAddonZoomPosition(null), onClick: () => addonModalActivePhoto && setAddonLightbox(addonModalActivePhoto) }, addonModalActivePhoto ? /* @__PURE__ */ React.createElement("img", { src: addonModalActivePhoto.url, alt: addonModalActivePhoto.alt || addonModal.name, className: "block w-full h-72 sm:h-[25rem] object-contain transition-transform duration-300" }) : /* @__PURE__ */ React.createElement("div", { className: "h-72 sm:h-[25rem] flex items-center justify-center font-body text-sm text-[#4B0D32]/70" }, "Add-on image coming soon"), addonZoomPosition && addonModalActivePhoto && /* @__PURE__ */ React.createElement("div", { "aria-hidden": "true", className: "absolute inset-0 pointer-events-none", style: { backgroundImage: `url(${addonModalActivePhoto.url})`, backgroundRepeat: "no-repeat", backgroundSize: "250% 250%", backgroundPosition: `${addonZoomPosition.x}% ${addonZoomPosition.y}%` } }), " ", addonModalActivePhoto && /* @__PURE__ */ React.createElement("span", { className: "absolute bottom-3 right-3 rounded-full bg-[#4B0D32]/60 text-[#FBF7F2] px-3 py-1 font-body text-[10px]" }, "Click to enlarge")), addonModalPhotos.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "flex gap-3 mt-4 overflow-x-auto pb-1" }, addonModalPhotos.map((photo, index) => /* @__PURE__ */ React.createElement("button", { type: "button", key: `${photo.url}-${index}`, onClick: () => {
+    setAddonModalImage(index);
+    setAddonZoomPosition(null);
+  }, className: `shrink-0 w-20 h-16 rounded-xl overflow-hidden border-2 ${addonModalImage === index ? "border-[#C2185B]" : "border-transparent"}` }, /* @__PURE__ */ React.createElement("img", { src: photo.url, alt: photo.alt || addonModal.name, className: "w-full h-full object-cover" })))), /* @__PURE__ */ React.createElement("h2", { className: "font-display font-bold text-3xl text-[#4B0D32] mt-6" }, addonModal.name), /* @__PURE__ */ React.createElement("p", { className: "font-body text-sm text-[#4B0D32]/70 mt-2" }, "A thoughtful extra for your ritual box or a useful item to purchase on its own."), /* @__PURE__ */ React.createElement("div", { className: "flex items-center justify-between gap-4 mt-5 rounded-xl border border-[#C2185B]/20 bg-white/70 px-4 py-3" }, /* @__PURE__ */ React.createElement("span", { className: "font-body text-sm text-[#4B0D32]" }, "Quantity"), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-3" }, /* @__PURE__ */ React.createElement("button", { type: "button", disabled: addonModalQuantity <= 1, onClick: () => setAddonModalQuantity((quantity) => Math.max(1, quantity - 1)), className: "w-8 h-8 rounded-full border border-[#4B0D32]/10 text-[#4B0D32] disabled:opacity-40", "aria-label": "Decrease Add-on quantity" }, /* @__PURE__ */ React.createElement(Minus, { size: 14, className: "mx-auto" })), /* @__PURE__ */ React.createElement("span", { className: "min-w-6 text-center font-body font-semibold text-[#4B0D32]" }, addonModalQuantity), /* @__PURE__ */ React.createElement("button", { type: "button", disabled: addonModal.inventory != null && addonModalQuantity >= addonModal.inventory, onClick: () => setAddonModalQuantity((quantity) => quantity + 1), className: "w-8 h-8 rounded-full border border-[#C2185B] text-[#C2185B] disabled:opacity-40", "aria-label": "Increase Add-on quantity" }, /* @__PURE__ */ React.createElement(Plus, { size: 14, className: "mx-auto" })))), /* @__PURE__ */ React.createElement("div", { className: "flex flex-wrap items-center justify-between gap-3 mt-4" }, /* @__PURE__ */ React.createElement("span", { className: "font-body text-[#C2185B] font-semibold" }, formatKsh(addonModal.priceModifier), " added to box"), /* @__PURE__ */ React.createElement("span", { className: "font-body text-sm text-[#4B0D32]/70" }, addonModal.inventory == null ? "In stock" : `${addonModal.inventory} available`)), /* @__PURE__ */ React.createElement("div", { className: "grid sm:grid-cols-2 gap-3 mt-6" }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => addAddonToBox(addonModal), className: "bg-[#4B0D32] text-[#FBF7F2] rounded-full py-3 font-body text-sm" }, "Add to my box ", /* @__PURE__ */ React.createElement(Plus, { size: 16, className: "inline ml-1" })), addonModal.standalonePrice != null && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => {
+    addStandaloneToCart(addonModal, addonModalQuantity);
+    setAddonModal(null);
+  }, className: "border border-[#C2185B] text-[#C2185B] rounded-full py-3 font-body text-sm" }, "Add to cart \xB7 ", formatKsh(addonModal.standalonePrice)), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => {
+    setStandaloneQuantity(addonModalQuantity);
+    setStandaloneOnly(addonModal._id);
+    setPicks({});
+    setAddonModal(null);
+    goToWizardStep(5);
+  }, className: "border border-[#4B0D32]/15 text-[#4B0D32] rounded-full py-3 font-body text-sm" }, "Buy this only")))))), addonLightbox && /* @__PURE__ */ React.createElement("div", { className: "fixed inset-0 z-[60] bg-[#4B0D32]/80 flex items-center justify-center p-4 sm:p-10", role: "dialog", "aria-modal": "true", "aria-label": "Enlarged Add-on image", onClick: () => setAddonLightbox(null) }, /* @__PURE__ */ React.createElement("button", { type: "button", onClick: () => setAddonLightbox(null), className: "absolute top-5 right-5 rounded-full bg-white/90 text-[#4B0D32] p-3 shadow-lg", "aria-label": "Close enlarged image" }, /* @__PURE__ */ React.createElement(X, { size: 24 })), /* @__PURE__ */ React.createElement("div", { className: "max-w-6xl max-h-full", onClick: (event) => event.stopPropagation() }, /* @__PURE__ */ React.createElement("img", { src: addonLightbox.url, alt: addonLightbox.alt || addonModal?.name || "Add-on", className: "max-h-[88vh] max-w-[92vw] object-contain rounded-2xl shadow-2xl" }))));
 }
