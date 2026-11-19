@@ -791,10 +791,12 @@ export default function Shop() {
             const min = Number(d.minSelections || 0);
             const done = ids.length >= min && ids.length > 0;
             const thumbs = [...new Set(ids)].slice(0, 3);
+            const representative = (byCategory[d.key] || []).find((product) => photosOf(product).length > 0);
+            const representativePhoto = representative ? photosOf(representative)[0] : null;
             return (
               <button type="button" key={d.key} ref={(node) => { if (node) categoryCardRefs.current[d.key] = node; else delete categoryCardRefs.current[d.key]; }} onClick={() => setActiveCategory(d.key)} className="hb-card flex min-h-[92px] items-center gap-4 p-4 text-left" data-selected={done}>
                 <span className="flex w-14 shrink-0 justify-center -space-x-3">
-                  {thumbs.length ? thumbs.map((id) => { const ph = photosOf(byId[id])[0]; return <span key={id} className="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-white">{ph ? <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}</span>; }) : <Bloom size={34} className="text-[#C2185B]/50" />}
+                  {thumbs.length ? thumbs.map((id) => { const ph = photosOf(byId[id])[0]; return <span key={id} className="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-white">{ph ? <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}</span>; }) : representativePhoto ? <span className="h-11 w-11 overflow-hidden rounded-full border-2 border-white bg-white shadow-sm"><img src={representativePhoto.url} alt="" loading="lazy" className="h-full w-full object-cover" /></span> : <Bloom size={34} className="text-[#C2185B]/50" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-medium">{labelOf(d)}</span>
@@ -1226,12 +1228,21 @@ export default function Shop() {
                     <h3 className="font-display text-xl">What’s in your box</h3>
                     <p className="hb-muted mt-1 text-xs leading-5">Explore the categories included in this box and the choices available when you build your ritual.</p>
                     <ul className="mt-4 divide-y divide-[#4B0D32]/10">
-                      {boxCategories(boxModal).map((category) => (
-                        <li key={category._id || category.key} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                          <span className="text-sm font-medium">{labelOf(category)}</span>
-                          <span className="hb-muted max-w-[58%] text-right text-xs leading-5">{ruleText(category)}</span>
-                        </li>
-                      ))}
+                      {boxCategories(boxModal).map((category) => {
+                        const representative = (byCategory[category.key] || []).find((product) => photosOf(product).length > 0);
+                        const photo = representative ? photosOf(representative)[0] : null;
+                        return (
+                          <li key={category._id || category.key} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                            <span className="flex min-w-0 items-center gap-3">
+                              <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#4B0D32]/10 bg-white">
+                                {photo ? <img src={photo.url} alt="" loading="lazy" className="h-full w-full object-cover" /> : <Bloom size={25} className="text-[#C2185B]/50" />}
+                              </span>
+                              <span className="text-sm font-medium">{labelOf(category)}</span>
+                            </span>
+                            <span className="hb-muted max-w-[48%] text-right text-xs leading-5">{ruleText(category)}</span>
+                          </li>
+                        );
+                      })}
                     </ul>
                     <p className="hb-muted mt-4 border-t border-[#4B0D32]/10 pt-3 text-xs leading-5">You’ll choose your products in the next steps. Product availability may vary.</p>
                   </section>
