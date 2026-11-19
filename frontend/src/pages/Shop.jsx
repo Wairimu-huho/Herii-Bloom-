@@ -42,12 +42,17 @@ const normalizePhone = (v) => {
   return String(v || "").trim();
 };
 const ruleText = (d) => {
-  if (d.optionalExtra) return "Optional paid extra.";
+  if (d.includedAutomatically) return "Included automatically";
+  if (d.optionalExtra) return "Optional paid extra";
   const min = Number(d.minSelections || 0);
-  const max = d.maxSelections;
-  if (max != null && min === max) return `Choose ${min}.`;
-  return `Choose ${min} to ${max ?? "as many as you like"}.`;
+  const max = d.maxSelections == null ? Infinity : Number(d.maxSelections);
+  if (d.atLeastOneGroup) return "Part of a choose-at-least-one group";
+  if (min === max) return `Choose ${min}`;
+  if (min === 0) return max === Infinity ? "Optional — choose as many as you like" : `Optional — choose up to ${max}`;
+  if (max === Infinity) return `Choose at least ${min}`;
+  return `Choose ${min}–${max}`;
 };
+const boxCategories = (item) => [...(item?.categoryDefinitions || [])].sort((a, b) => categoryRank(a) - categoryRank(b));
 const progressText = (d, n) => {
   const min = Number(d.minSelections || 0);
   if (n < min) return `Choose ${min - n} more`;
@@ -700,6 +705,15 @@ export default function Shop() {
                 <div className="p-6">
                   <h3 className="font-display text-2xl sm:text-3xl">{b.name}</h3>
                   <p className="hb-muted mt-2 text-sm leading-6">{b.tagline}</p>
+                  {boxCategories(b).length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#C2185B]">What’s inside</p>
+                      <p className="hb-muted mt-1 text-xs leading-5">
+                        {boxCategories(b).slice(0, 3).map(labelOf).join(" · ")}
+                        {boxCategories(b).length > 3 ? ` · +${boxCategories(b).length - 3} more` : ""}
+                      </p>
+                    </div>
+                  )}
                   <p className="mt-5 text-xl font-semibold text-[#C2185B]">{formatKsh(b.price)} <span className="hb-muted text-sm font-normal">per box</span></p>
                   {on && reviewSummary.count > 0 && <p className="hb-muted mt-2 text-xs">Rated {reviewSummary.average} out of 5 by {reviewSummary.count} customer{reviewSummary.count === 1 ? "" : "s"}</p>}
                 </div>
@@ -1207,6 +1221,21 @@ export default function Shop() {
                 <h2 className="font-display mt-6 text-3xl">{boxModal.name}</h2>
                 <p className="hb-muted mt-2 text-sm">{boxModal.tagline}</p>
                 <p className="mt-4 text-sm leading-6">{boxModal.description || "A thoughtful care box with carefully chosen essentials for your routine."}</p>
+                {boxCategories(boxModal).length > 0 && (
+                  <section className="mt-6 rounded-2xl border border-[#4B0D32]/10 bg-[#F8E8ED]/60 p-4 sm:p-5" aria-label="Box contents">
+                    <h3 className="font-display text-xl">What’s in your box</h3>
+                    <p className="hb-muted mt-1 text-xs leading-5">Explore the categories included in this box and the choices available when you build your ritual.</p>
+                    <ul className="mt-4 divide-y divide-[#4B0D32]/10">
+                      {boxCategories(boxModal).map((category) => (
+                        <li key={category._id || category.key} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                          <span className="text-sm font-medium">{labelOf(category)}</span>
+                          <span className="hb-muted max-w-[58%] text-right text-xs leading-5">{ruleText(category)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="hb-muted mt-4 border-t border-[#4B0D32]/10 pt-3 text-xs leading-5">You’ll choose your products in the next steps. Product availability may vary.</p>
+                  </section>
+                )}
                 <p className="mt-5 font-semibold text-[#C2185B]">{formatKsh(boxModal.price)} <span className="hb-muted font-normal">per box</span></p>
                 <button type="button" className="hb-btn mt-5 w-full" onClick={() => { if (boxModal._id !== boxId) setPicks({}); setBoxId(boxModal._id); setBoxModal(null); goTo(2); }}>Choose this box <ArrowRight size={16} /></button>
               </div>
