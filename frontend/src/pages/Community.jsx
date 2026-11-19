@@ -972,7 +972,7 @@ export default function Community() {
       </main>
 
       {/* Footer accent */}
-      <div className="mt-6 rounded-[20px]] border-t border-[#EAD9DE]/60 bg-[#F3D5E0]">
+      <div className="mt-6 rounded-[20px] border-t border-[#EAD9DE]/60 bg-[#F3D5E0]">
         <div className="mx-auto flex max-w-6xl items-center
           justify-center gap-3 px-5 py-7 text-center">
           <Heart size={13} className="text-[#C2185B]" />
