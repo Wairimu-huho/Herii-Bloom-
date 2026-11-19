@@ -408,7 +408,7 @@ function PostCard({ post, user, onLogin }) {
 function ReminderCard() {
   return (
     <div className="relative overflow-hidden rounded-[24px] border
-      border-[#EAD9DE]/70 bg-[#F3D5E0] p-6 sm:p-7">
+      border-[#EAD9DE] bg-[#FFFDFA] p-5 sm:p-6">
       <div
         className="pointer-events-none absolute -right-8 -top-8
           h-28 w-28 rounded-full bg-[#F8E8ED]/70"
@@ -577,8 +577,8 @@ export default function Community() {
 
       {/* Editorial hero */}
       <div className="mx-auto w-full max-w-7xl">
-      <section className="relative overflow-hidden px-2 pb-6 pt-3
-        sm:px-5 sm:pb-8 sm:pt-5">
+      <section className="relative overflow-hidden px-2 pb-1 pt-0
+        sm:px-5 sm:pb-2 sm:pt-1">
         <div
           className="pointer-events-none absolute -right-24 top-0
             h-72 w-72 rounded-full border border-[#4B0D32]/[0.06]
@@ -592,28 +592,28 @@ export default function Community() {
           aria-hidden="true"
         />
 
-        <div className="relative mx-auto max-w-6xl px-3 py-5
-          sm:px-4 sm:py-7 lg:px-6 lg:py-8">
+        <div className="relative mx-auto max-w-6xl px-3 py-2
+          sm:px-4 sm:py-3 lg:px-6 lg:py-3">
           <div className="max-w-3xl">
-            <div className="mb-4 inline-flex items-center gap-3">
+            <div className="mb-2 inline-flex items-center gap-3">
               <span className="h-px w-8 bg-[#C2185B]/60" />
               <SectionLabel>The Heri Bloom community</SectionLabel>
             </div>
 
-            <h1 className="max-w-3xl font-display text-[43px]
-              font-normal leading-[1.04] tracking-[-0.035em]
-              text-[#4B0D32] sm:text-6xl md:text-[68px]">
+            <h1 className="max-w-3xl font-display text-[34px]
+              font-normal leading-[1.05] tracking-[-0.035em]
+              text-[#4B0D32] sm:text-[44px] md:text-[50px]">
               A softer space to share, ask, and be heard.
             </h1>
 
-            <p className="mt-4 max-w-2xl font-body text-sm
-              leading-7 text-[#5E4B5D] sm:text-base">
+            <p className="mt-2 max-w-2xl font-body text-xs
+              leading-5 text-[#5E4B5D] sm:text-sm sm:leading-6">
               A thoughtful corner for cycle conversations, gentle
               encouragement, and the everyday wisdom we learn from
               one another.
             </p>
 
-            <div className="mt-5 flex items-center gap-3
+            <div className="mt-2 flex items-center gap-3
               text-[#C2185B]" aria-hidden="true">
               <span className="h-px w-10 bg-[#C2185B]/40" />
               <Heart size={13} strokeWidth={1.5} />
@@ -623,8 +623,8 @@ export default function Community() {
             <button
               type="button"
               onClick={openComposer}
-              className="mt-5 inline-flex items-center justify-center
-                gap-2 rounded-full bg-[#4B0D32] px-6 py-3.5
+              className="mt-3 inline-flex items-center justify-center
+                gap-2 rounded-full bg-[#4B0D32] px-5 py-2.5
                 font-body text-sm font-medium text-white
                 shadow-[0_5px_18px_rgba(75,13,50,0.12)]
                 transition duration-200 hover:-translate-y-0.5
@@ -637,7 +637,7 @@ export default function Community() {
               Share your thoughts
             </button>
 
-            <p className="mt-2 font-body text-xs text-[#766775]">
+            <p className="mt-1 font-body text-[11px] text-[#766775]">
               Your experiences matter. Share at your own pace.
             </p>
           </div>
@@ -646,21 +646,21 @@ export default function Community() {
 
       {/* Community content */}
       <main className="mx-auto grid w-full max-w-6xl
-        items-start gap-6 px-2 py-2 sm:px-5 sm:py-3
+        items-start gap-5 px-2 py-0 sm:px-5 sm:py-1
         lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-7">
 
         <section className="min-w-0 rounded-[24px] border border-[#EAD9DE]
-          bg-[#FBF7F2] p-4 sm:p-6 lg:p-7">
+          bg-[#FBF7F2] p-3 sm:p-5 lg:p-6">
           {/* Section heading */}
-          <div className="mb-5 flex flex-wrap items-end
-            justify-between gap-3 sm:mb-6">
+          <div className="mb-3 flex flex-wrap items-end
+            justify-between gap-2 sm:mb-4">
             <div>
               <SectionLabel>From the community</SectionLabel>
-              <h2 className="mt-3 font-display text-3xl
-                font-normal tracking-tight text-[#4B0D32] sm:text-4xl">
+              <h2 className="mt-2 font-display text-2xl
+                font-normal tracking-tight text-[#4B0D32] sm:text-3xl">
                 Recent conversations
               </h2>
-              <p className="mt-2 font-body text-sm leading-6 text-[#766775]">
+              <p className="mt-1 font-body text-xs leading-5 text-[#766775]">
                 Real experiences. Gentle support. No judgment.
               </p>
             </div>
@@ -932,7 +932,7 @@ export default function Community() {
 
           {/* Posts */}
           {status === "ready" && posts.length > 0 && (
-            <div className="space-y-5 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               {posts.map((post) => (
                 <PostCard
                   key={post._id}
@@ -951,7 +951,7 @@ export default function Community() {
           <JournalCard />
 
           <div className="rounded-[20px] border border-[#EAD9DE]
-            bg-[#F8E8ED]/60 p-5">
+            bg-[#F8E8ED] p-5">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 text-[#C2185B]">
                 <Check size={17} />
@@ -960,7 +960,7 @@ export default function Community() {
                 <h3 className="font-body text-sm font-semibold text-[#4B0D32]">
                   A space for kindness
                 </h3>
-                <p className="mt-2 font-body text-xs leading-6 text-[#766775]">
+                <p className="mt-2 font-body text-sm leading-7 text-[#766775]">
                   Different bodies and experiences deserve respect.
                   Share thoughtfully, protect your privacy, and remember
                   that everyone's journey is different.
