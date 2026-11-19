@@ -36,8 +36,8 @@ export default function Navbar() {
     }`;
 
   return (
-    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent shadow-none" : "sticky top-0 z-[100] bg-[#F3D5E0] shadow-none"} w-full px-3 py-3 sm:px-6`}>
-      <div className="mx-auto w-full max-w-[1440px]">
+    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent" : "sticky top-0 z-[100] bg-transparent"} w-full px-3 pt-3 sm:px-6 sm:pt-4`}>
+      <div className={`mx-auto w-full max-w-[1440px] rounded-full px-4 py-2 shadow-[0_12px_35px_-24px_rgba(75,13,50,0.5)] sm:px-7 lg:px-9 ${isHome ? "bg-[#F3D5E0]/75 backdrop-blur-md" : "bg-[#F3D5E0]"}`}>
 
         {/* MAIN NAVBAR */}
         <div className="flex min-h-[58px] items-center justify-between gap-3">
@@ -61,7 +61,7 @@ export default function Navbar() {
               aria-label="Heri Bloom home"
               className="flex shrink-0 items-center gap-2"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-transparent p-1.5">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-transparent p-1.5 sm:h-12 sm:w-12">
                 <img
                   src={lotus}
                   alt=""
@@ -70,11 +70,11 @@ export default function Navbar() {
               </span>
 
               <span className="hidden flex-col leading-none sm:flex">
-                <span className={`whitespace-nowrap font-display text-[19px] font-bold tracking-[-.04em] ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}>
+                <span className={`whitespace-nowrap font-display text-[23px] font-bold tracking-[-.04em] sm:text-[25px] ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}>
                   Heri Bloom
                 </span>
 
-                <span className="mt-1 flex items-center gap-1 font-body text-[7px] font-bold tracking-[.18em] text-[#4B0D32]">
+                <span className="mt-1 flex items-center gap-1 font-body text-[8px] font-bold tracking-[.18em] text-[#4B0D32]">
                   <span className={`h-px w-3 ${isHome ? "bg-[#4B0D32]/70" : "bg-[#4B0D32]/50"}`} />
                   THE RITUAL BOX
                   <span className="h-px w-3 bg-[#4B0D32]/50" />
@@ -104,9 +104,9 @@ export default function Navbar() {
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
 
             {user ? (
-              <div className="hidden items-center gap-2 font-body text-[11px] lg:flex">
+              <div className="hidden items-center gap-3 font-body text-sm lg:flex">
 
-                <span className={`font-bold ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}>
+                <span className={`text-sm font-bold ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}>
                   Hi, {user.name?.split(" ")[0]}
                 </span>
 
@@ -122,7 +122,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={logout}
-                  className={`font-bold transition hover:text-[#C2185B] ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}
+                  className={`text-sm font-bold transition hover:text-[#C2185B] ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}
                 >
                   Log out
                 </button>
