@@ -37,7 +37,7 @@ export default function Navbar() {
 
   return (
     <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent" : "sticky top-0 z-[100] bg-transparent"} w-full px-3 pt-3 sm:px-6 sm:pt-4`}>
-      <div className={`mx-auto w-full max-w-[1440px] rounded-full px-4 py-2 shadow-[0_12px_35px_-24px_rgba(75,13,50,0.5)] sm:px-7 lg:px-9 ${isHome ? "bg-[#F3D5E0]/75 backdrop-blur-md" : "bg-[#F3D5E0]"}`}>
+      <div className={`mx-auto w-full max-w-[1440px] px-4 py-2 sm:px-7 lg:px-9 ${isHome ? "bg-transparent shadow-none" : "rounded-full bg-[#F3D5E0] shadow-[0_12px_35px_-24px_rgba(75,13,50,0.5)]"}`}>
 
         {/* MAIN NAVBAR */}
         <div className="flex min-h-[58px] items-center justify-between gap-3">
