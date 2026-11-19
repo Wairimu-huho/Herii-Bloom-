@@ -288,7 +288,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="hb min-h-screen overflow-hidden bg-[#FBF7F2] text-[#4B0D32]">
+    <div className="hb min-h-screen overflow-hidden bg-[#F3D5E0] text-[#4B0D32]">
 
       <style>{`
         .hb-home-grain {
@@ -346,6 +346,8 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-r from-[#4B0D32]/75 via-[#4B0D32]/35 to-transparent md:via-[#4B0D32]/15" />
 
           <div className="absolute inset-0 bg-gradient-to-t from-[#4B0D32]/35 via-transparent to-[#4B0D32]/10" />
+
+          <div className="absolute inset-0 bg-gradient-to-l from-[#FBF7F2]/35 via-[#F3D5E0]/10 to-transparent" />
 
           <div className="hb-home-grain absolute inset-0 opacity-20" />
 
@@ -419,7 +421,7 @@ export default function Home() {
             2. BENEFITS STRIP
         ========================================== */}
 
-        <section className="border-b border-[#4B0D32]/10 bg-[#FBF7F2]">
+        <section className="border-b border-[#4B0D32]/10 bg-[#F3D5E0]">
 
           <div className="mx-auto grid max-w-7xl grid-cols-2 px-5 py-7 md:grid-cols-4 md:px-8 md:py-9">
 
@@ -547,7 +549,7 @@ export default function Home() {
             4. BRAND VALUES
         ========================================== */}
 
-        <section className="bg-[#F8E8ED] px-5 py-20 md:px-8 md:py-24">
+        <section className="bg-[#F3D5E0] px-5 py-20 md:px-8 md:py-24">
 
           <div className="mx-auto max-w-7xl">
 
@@ -639,7 +641,7 @@ export default function Home() {
 
         <section
           id="ritual-boxes"
-          className="hb-home-section bg-[#FBF7F2] px-5 py-20 md:px-8 md:py-28"
+          className="hb-home-section bg-[#F3D5E0] px-5 py-20 md:px-8 md:py-28"
         >
 
           <div className="mx-auto max-w-7xl">
@@ -748,7 +750,7 @@ export default function Home() {
             6. LIFESTYLE / SELF-CARE STORY
         ========================================== */}
 
-        <section className="overflow-hidden bg-[#F8E8ED]">
+        <section className="overflow-hidden bg-[#F3D5E0]">
 
           <div className="mx-auto grid max-w-[1440px] md:min-h-[600px] md:grid-cols-2">
 
@@ -855,7 +857,7 @@ export default function Home() {
             7. FINAL CALL TO ACTION
         ========================================== */}
 
-        <section className="px-5 py-20 md:px-8 md:py-28">
+        <section className="bg-[#F3D5E0] px-5 py-20 md:px-8 md:py-28">
 
           <Reveal className="relative mx-auto max-w-7xl overflow-hidden rounded-[30px] bg-[#4B0D32] px-7 py-16 text-[#FBF7F2] md:px-14 md:py-20">
 
@@ -907,7 +909,7 @@ export default function Home() {
             8. TRUST / BRAND PROMISE
         ========================================== */}
 
-        <section className="border-t border-[#4B0D32]/10 bg-[#FBF7F2] px-5 py-10 md:px-8">
+        <section className="border-t border-[#4B0D32]/10 bg-[#F3D5E0] px-5 py-10 md:px-8">
 
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-4 text-center sm:flex-row sm:gap-8">
 
