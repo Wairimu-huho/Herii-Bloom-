@@ -129,9 +129,9 @@ function Bloom({ size = 44, className = "" }) {
 }
 
 const MODAL = {
-  center: ["items-end justify-center sm:items-center sm:p-6", "w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-[28px] sm:rounded-[28px]"],
-  right: ["justify-end", "flex h-full w-full max-w-md flex-col"],
-  sheet: ["items-end justify-center", "w-full max-h-[85vh] overflow-y-auto rounded-t-[28px]"],
+  center: ["items-end justify-center sm:items-center sm:p-6", "w-full sm:max-w-2xl max-h-[92vh] max-h-[92dvh] overflow-y-auto rounded-t-[28px] pb-[env(safe-area-inset-bottom,0px)] sm:rounded-[28px] sm:pb-0"],
+  right: ["justify-end", "flex h-full w-full max-w-md flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]"],
+  sheet: ["items-end justify-center", "w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto rounded-t-[28px] pb-[env(safe-area-inset-bottom,0px)]"],
   lightbox: ["items-center justify-center p-4", "max-w-5xl rounded-2xl"],
 };
 const modalStack = [];
