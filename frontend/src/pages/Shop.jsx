@@ -264,12 +264,12 @@ function ProductCard({ product, count, repeat, onToggle, onAdd, onRemove, onZoom
   const atLimit = product.inventory != null && count >= product.inventory;
   return (
     <div className="hb-card hb-product-card flex flex-col overflow-hidden" data-selected={selected}>
-      <div className="relative aspect-square bg-white">
+      <div className="hb-product-image relative aspect-square bg-white">
         {photo ? <img src={photo.url} alt={photo.alt || product.name} loading="lazy" className="h-full w-full object-contain p-2" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
         {photo && <button type="button" className="hb-icon-btn absolute right-2 top-2" aria-label={`View ${product.name} larger`} onClick={() => onZoom(photo)}><Maximize2 size={15} /></button>}
         {selected && <span className="hb-badge absolute left-3 top-3" aria-hidden="true"><Check size={14} /></span>}
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
+      <div className="hb-product-copy flex flex-1 flex-col gap-1.5 p-4">
         <h3 className="text-sm font-medium">{product.name}</h3>
         {product.description && <p className="hb-muted hb-clamp text-xs leading-5">{product.description}</p>}
         <p className="text-xs font-medium text-[#C2185B]">{product.priceModifier > 0 ? `+ ${formatKsh(product.priceModifier)}` : "Included"}</p>
@@ -852,13 +852,13 @@ export default function Shop() {
           const atLimit = p.inventory != null && n >= p.inventory;
           return (
             <div key={p._id} className="hb-card hb-addon-card flex flex-col overflow-hidden" data-selected={n > 0}>
-              <div className="relative aspect-square bg-white">
+              <div className="hb-addon-image relative aspect-square bg-white">
                 <button type="button" aria-haspopup="dialog" aria-label={`View ${p.name} details`} className="block h-full w-full" onClick={() => { setAddonModal(p); setAddonImage(0); }}>
                   {photo ? <img src={photo.url} alt={photo.alt || p.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
                 </button>
                 <span className="hb-icon-btn pointer-events-none absolute right-2 top-2" aria-hidden="true"><Maximize2 size={15} /></span>
               </div>
-              <div className="flex flex-1 flex-col gap-1.5 p-4">
+              <div className="hb-addon-copy flex flex-1 flex-col gap-1.5 p-4">
                 <h3 className="text-sm font-medium">{p.name}</h3>
                 {p.description && <p className="hb-muted hb-clamp text-xs leading-5">{p.description}</p>}
                 <p className="text-xs font-medium text-[#C2185B]">{formatKsh(p.priceModifier)} in your box</p>
