@@ -36,8 +36,8 @@ export default function Navbar() {
     }`;
 
   return (
-    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent" : "sticky top-0 z-[100] bg-transparent"} w-full px-3 pt-3 sm:px-6 sm:pt-4`}>
-      <div className={`mx-auto w-full max-w-[1440px] px-4 py-2 sm:px-7 lg:px-9 ${isHome ? "bg-transparent shadow-none" : "rounded-full bg-[#F3D5E0] shadow-[0_12px_35px_-24px_rgba(75,13,50,0.5)]"}`}>
+    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent" : "sticky top-0 z-[100] bg-transparent"} w-full border-0 px-3 pt-3 sm:px-6 sm:pt-4`}>
+      <div className={`mx-auto w-full max-w-[1440px] border-0 px-4 py-2 sm:px-7 lg:px-9 ${isHome ? "bg-transparent shadow-none" : "rounded-full bg-[#F3D5E0] shadow-[0_12px_35px_-24px_rgba(75,13,50,0.5)]"}`}>
 
         {/* MAIN NAVBAR */}
         <div className="flex min-h-[58px] items-center justify-between gap-3">
@@ -65,19 +65,19 @@ export default function Navbar() {
                 <img
                   src={lotus}
                   alt=""
-                  className="h-full w-full object-contain" style={{ filter: "brightness(0) saturate(100%) invert(10%) sepia(35%) saturate(2948%) hue-rotate(282deg) brightness(87%) contrast(105%)" }}
+                  className="h-full w-full object-contain" style={{ filter: "brightness(0) invert(1)" }}
                 />
               </span>
 
               <span className="hidden flex-col leading-none sm:flex">
-                <span className={`whitespace-nowrap font-display text-[23px] font-bold tracking-[-.04em] sm:text-[25px] ${isHome ? "text-[#4B0D32]" : "text-[#4B0D32]"}`}>
+                <span className={`whitespace-nowrap font-display text-[23px] font-bold tracking-[-.04em] sm:text-[25px] ${isHome ? "text-[#FFF7F2] drop-shadow-[0_2px_8px_rgba(55,8,34,0.55)]" : "text-[#4B0D32]"}`}>
                   Heri Bloom
                 </span>
 
-                <span className="mt-1 flex items-center gap-1 font-body text-[8px] font-bold tracking-[.18em] text-[#4B0D32]">
-                  <span className={`h-px w-3 ${isHome ? "bg-[#4B0D32]/70" : "bg-[#4B0D32]/50"}`} />
+                <span className={`mt-1 flex items-center gap-1 font-body text-[8px] font-extrabold tracking-[.18em] ${isHome ? "text-[#FFD6E3] drop-shadow-[0_1px_5px_rgba(55,8,34,0.8)]" : "text-[#4B0D32]"}`}>
+                  <span className={`h-px w-3 ${isHome ? "bg-[#FFD6E3]" : "bg-[#4B0D32]/50"}`} />
                   THE RITUAL BOX
-                  <span className="h-px w-3 bg-[#4B0D32]/50" />
+                  <span className={`h-px w-3 ${isHome ? "bg-[#FFD6E3]" : "bg-[#4B0D32]/50"}`} />
                 </span>
               </span>
             </Link>
