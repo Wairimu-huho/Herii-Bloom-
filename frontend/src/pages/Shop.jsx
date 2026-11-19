@@ -322,6 +322,7 @@ export default function Shop() {
   const [selectedCartIds, setSelectedCartIds] = useState(() => new Set());
 
   const topRef = useRef(null);
+  const sectionRef = useRef(null);
   const firstRender = useRef(true);
   const categoryCardRefs = useRef({});
   const categoryReturnRef = useRef(null);
@@ -417,7 +418,7 @@ export default function Shop() {
       window.setTimeout(() => categoryCardRefs.current[key]?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
       return;
     }
-    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   }, [wizardStep, activeCategory, mode]);
 
   /* ---------- pricing and validation ---------- */
@@ -476,7 +477,7 @@ export default function Shop() {
       if (next > 3 && !complete) { toast.error(selectionIssues[0]); setActiveCategory(null); setWizardStep(3); return; }
       if (next > 5) {
         const d = getIssues({ withPolicy: false });
-        if (d.length) { setIssues(d); toast.error(d[0]); setWizardStep(5); topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+        if (d.length) { setIssues(d); toast.error(d[0]); setWizardStep(5); sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
       }
     }
     setIssues([]);
@@ -986,7 +987,7 @@ export default function Shop() {
           <div><p className="text-sm font-semibold">Pay securely with Paystack</p><p className="hb-muted mt-0.5 text-xs leading-5">Card, M Pesa or bank transfer. You will be taken to Paystack to complete your payment.</p></div>
         </div>
         <p className="mt-4 flex items-center gap-2 text-sm text-[#C2185B]"><Heart size={15} fill="currentColor" /> {IMPACT_LINE}</p>
-        <button type="button" className="hb-btn mt-5 min-h-[58px] w-full px-6 text-base font-semibold shadow-lg shadow-[#4B0D32]/20 sm:w-auto sm:min-w-[280px]" disabled={!box || !complete} onClick={addBoxToCart}>Add this box to my cart <ShoppingBag size={18} /></button>
+        <div className="mt-5 flex justify-center"><button type="button" className="hb-btn min-h-[58px] w-full px-6 text-base font-semibold shadow-lg shadow-[#4B0D32]/20 sm:w-auto sm:min-w-[280px]" disabled={!box || !complete} onClick={addBoxToCart}>Add this box to my cart <ShoppingBag size={18} /></button></div>
 
         <section className="mt-10 border-t border-[#4B0D32]/10 pt-6">
           <div className="flex items-baseline justify-between gap-3">
@@ -1156,7 +1157,7 @@ export default function Shop() {
           )}
 
           <div className={`grid items-start gap-8 ${showAside ? "lg:grid-cols-[minmax(0,1fr)_380px]" : ""}`}>
-            <main className="hb-panel p-6 md:p-10">
+            <main ref={sectionRef} className="hb-panel scroll-mt-24 p-6 md:p-10">
               <AnimatePresence mode="wait">
                 <motion.div key={`${mode}-${wizardStep}-${activeCategory || ""}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                   {renderStep()}
