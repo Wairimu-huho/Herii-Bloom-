@@ -347,7 +347,8 @@ export default function Home() {
 
           <div className="absolute inset-0 bg-gradient-to-t from-[#4B0D32]/35 via-transparent to-[#4B0D32]/10" />
 
-          <div className="absolute inset-0 bg-gradient-to-l from-[#FBF7F2]/35 via-[#F3D5E0]/10 to-transparent" />
+          {/* A gentle lift beneath the logo; the rest of the hero image stays untouched. */}
+          <div className="pointer-events-none absolute left-0 top-16 h-[38%] w-[58%] bg-[radial-gradient(ellipse_at_18%_18%,rgba(248,232,237,0.16),transparent_68%)]" />
 
           <div className="hb-home-grain absolute inset-0 opacity-20" />
 
@@ -549,7 +550,7 @@ export default function Home() {
             4. BRAND VALUES
         ========================================== */}
 
-        <section className="bg-[#F3D5E0] px-5 py-20 md:px-8 md:py-24">
+        <section className="bg-[#F8E8ED] px-5 py-20 md:px-8 md:py-24">
 
           <div className="mx-auto max-w-7xl">
 
@@ -641,7 +642,7 @@ export default function Home() {
 
         <section
           id="ritual-boxes"
-          className="hb-home-section bg-[#F3D5E0] px-5 py-20 md:px-8 md:py-28"
+          className="hb-home-section bg-[#FBF7F2] px-5 py-20 md:px-8 md:py-28"
         >
 
           <div className="mx-auto max-w-7xl">
@@ -750,7 +751,7 @@ export default function Home() {
             6. LIFESTYLE / SELF-CARE STORY
         ========================================== */}
 
-        <section className="overflow-hidden bg-[#F3D5E0]">
+        <section className="overflow-hidden bg-[#F8E8ED]">
 
           <div className="mx-auto grid max-w-[1440px] md:min-h-[600px] md:grid-cols-2">
 
@@ -909,7 +910,7 @@ export default function Home() {
             8. TRUST / BRAND PROMISE
         ========================================== */}
 
-        <section className="border-t border-[#4B0D32]/10 bg-[#F3D5E0] px-5 py-10 md:px-8">
+        <section className="border-t border-[#4B0D32]/10 bg-[#FBF7F2] px-5 py-10 md:px-8">
 
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-4 text-center sm:flex-row sm:gap-8">
 
