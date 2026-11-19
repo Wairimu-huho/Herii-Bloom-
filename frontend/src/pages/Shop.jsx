@@ -202,6 +202,12 @@ const StepHead = ({ title, hint }) => (
     {hint && <p className="hb-muted mt-1.5 max-w-xl text-sm leading-6">{hint}</p>}
   </div>
 );
+const BackBar = ({ onBack, children }) => (
+  <div className="mb-6 flex items-center justify-between gap-3">
+    <button type="button" className="hb-btn-quiet" onClick={onBack}><ArrowLeft size={16} /> Back</button>
+    {children}
+  </div>
+);
 const Field = ({ label, hint, className = "", children }) => (
   <label className={`block ${className}`}>
     <span className="hb-label">{label}</span>
@@ -296,6 +302,8 @@ export default function Shop() {
   const [boxModal, setBoxModal] = useState(null);
   const [boxModalImage, setBoxModalImage] = useState(0);
   const [lightbox, setLightbox] = useState(null);
+  const [addonModal, setAddonModal] = useState(null);
+  const [addonImage, setAddonImage] = useState(0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [openPolicy, setOpenPolicy] = useState("");
   const [notice, setNotice] = useState(params.get("payment") === "cancelled" ? "Your payment was cancelled and nothing was charged. Your box is still here whenever you are ready." : "");
@@ -460,7 +468,7 @@ export default function Shop() {
       if (next > 3 && !complete) { toast.error(selectionIssues[0]); setActiveCategory(null); setWizardStep(3); return; }
       if (next > 5) {
         const d = getIssues({ withPolicy: false });
-        if (d.length) { setIssues(d); toast.error(d[0]); setWizardStep(5); return; }
+        if (d.length) { setIssues(d); toast.error(d[0]); setWizardStep(5); topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
       }
     }
     setIssues([]);
@@ -553,7 +561,7 @@ export default function Shop() {
     if (!selectedCartItems.length) return toast.error("Select at least one item to check out");
     const found = getIssues({ withSelections: false });
     setIssues(found);
-    if (found.length) return toast.error(found[0]);
+    if (found.length) { toast.error(found[0]); topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
     setSubmitting(true);
     try {
       const { data: order } = await api.post("/api/orders/cart", { items: selectedCartItems, firstDeliveryDate, phone: normalizePhone(phone), deliveryAddress: deliveryAddress(), gift, cardMessage, cancellationAccepted: accept, notificationPreferences });
@@ -664,14 +672,14 @@ export default function Shop() {
   /* ---------- step renderers ---------- */
   const renderBoxStep = () => (
     <>
-      <StepHead title="Choose your box" hint="Pick the level of care that feels right. Preview the photos before you decide." />
+      <StepHead title="Choose your box" hint="Tap a box to see its photos and details, then choose the one that feels right." />
       <div className="grid gap-5 sm:grid-cols-2">
         {boxes.map((b) => {
           const photo = photosOf(b)[0];
           const on = b._id === boxId;
           return (
             <div key={b._id} className="hb-card overflow-hidden" data-selected={on}>
-              <button type="button" aria-pressed={on} onClick={() => setBoxId(b._id)} className="block w-full text-left">
+              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="block w-full text-left">
                 <div className="relative h-56 bg-white">
                   <img src={photo?.url || cardBox} alt={photo?.alt || b.name} loading="lazy" className="h-full w-full object-contain" />
                   {b.mostPopular && <span className="hb-ribbon">Most loved</span>}
@@ -683,10 +691,10 @@ export default function Shop() {
                   {on && reviewSummary.count > 0 && <p className="hb-muted mt-1 text-xs">Rated {reviewSummary.average} out of 5 by {reviewSummary.count} customer{reviewSummary.count === 1 ? "" : "s"}</p>}
                 </div>
               </button>
-              <div className="flex items-center justify-between px-4 pb-4">
-                <button type="button" className="hb-link" onClick={() => { setBoxModal(b); setBoxModalImage(0); }}>Preview photos</button>
-                {on && <span className="flex items-center gap-1 text-xs font-medium text-[#C2185B]"><Check size={14} /> Selected</span>}
-              </div>
+              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="flex w-full items-center justify-between px-5 pb-5 text-left">
+                <span className="text-xs font-medium text-[#C2185B]">View photos and details</span>
+                {on && <span className="flex items-center gap-1 text-xs font-medium text-[#C2185B]"><Check size={14} /> Current choice</span>}
+              </button>
             </div>
           );
         })}
@@ -704,10 +712,11 @@ export default function Shop() {
     ];
     return (
       <>
-        <StepHead title="Choose your plan" hint="Pick a single ritual, or save when you commit to three boxes." />
+        <BackBar onBack={() => goTo(1)} />
+        <StepHead title="Choose your plan" hint="Pick a single ritual, or save when you commit to three boxes. Tap a plan to continue." />
         <div className="grid gap-5 sm:grid-cols-2">
           {options.map((o) => (
-            <button type="button" key={o.key} aria-pressed={purchaseType === o.key} onClick={() => setPurchaseType(o.key)} className="hb-card p-6 text-left" data-selected={purchaseType === o.key}>
+            <button type="button" key={o.key} aria-pressed={purchaseType === o.key} onClick={() => { setPurchaseType(o.key); goTo(3); }} className="hb-card p-6 text-left" data-selected={purchaseType === o.key}>
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-display text-xl">{o.title}</h3>
                 <span className={`flex h-6 w-6 items-center justify-center rounded-full border ${purchaseType === o.key ? "border-[#C2185B] bg-[#C2185B] text-white" : "border-[#4B0D32]/25"}`}>{purchaseType === o.key && <Check size={14} />}</span>
@@ -737,12 +746,14 @@ export default function Shop() {
             ))}
           </div>
           {!list.length && <p className="hb-muted text-sm">Nothing is available in this category right now.</p>}
+          <button type="button" className="hb-btn mt-6" onClick={() => setActiveCategory(null)}>Done with {labelOf(activeDefinition)}</button>
         </>
       );
     }
     const ready = regularSelectable.filter((d) => (picks[d.key] || []).length >= Number(d.minSelections || 0)).length;
     return (
       <>
+        <BackBar onBack={() => goTo(2)} />
         <StepHead title="Choose your products" hint="Open each category and pick your favourites. Your choices are saved as you go, and you can come back to any category." />
         <div className="grid gap-3 sm:grid-cols-2">
           {regularSelectable.map((d) => {
@@ -765,6 +776,11 @@ export default function Shop() {
           })}
         </div>
         <p className="hb-muted mt-5 text-sm">{ready} of {regularSelectable.length} categories ready</p>
+        {complete ? (
+          <button type="button" className="hb-btn mt-6" onClick={() => goTo(4)}>Proceed to add ons <ArrowRight size={16} /></button>
+        ) : (
+          <p className="mt-2 text-sm text-[#C2185B]">{selectionIssues[0]}</p>
+        )}
         {includedProducts.length > 0 && <p className="hb-muted mt-2 text-sm">Always included: {includedProducts.map((p) => p.name).join(", ")}.</p>}
       </>
     );
@@ -772,7 +788,10 @@ export default function Shop() {
 
   const renderAddonsStep = () => (
     <>
-      <StepHead title="Add ons" hint="A little extra for your ritual. Add to your box, or buy separately and have it delivered with your order." />
+      <BackBar onBack={() => goTo(3)}>
+        <button type="button" className={addonsPicked ? "hb-btn" : "hb-btn-outline"} onClick={() => goTo(5)}>{addonsPicked ? "Continue to delivery" : "Skip add ons"} <ArrowRight size={16} /></button>
+      </BackBar>
+      <StepHead title="Add ons" hint="A little extra for your ritual. Tap an add on to see its photos and details. Add it to your box, or buy it separately." />
       {!addonProducts.length && <p className="hb-muted text-sm">No add ons are available right now. You can continue.</p>}
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))]">
         {addonProducts.map((p) => {
@@ -782,8 +801,10 @@ export default function Shop() {
           return (
             <div key={p._id} className="hb-card flex flex-col overflow-hidden" data-selected={n > 0}>
               <div className="relative aspect-square bg-white">
-                {photo ? <img src={photo.url} alt={photo.alt || p.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
-                {photo && <button type="button" className="hb-icon-btn absolute right-2 top-2" aria-label={`View ${p.name} larger`} onClick={() => setLightbox(photo)}><Maximize2 size={15} /></button>}
+                <button type="button" aria-haspopup="dialog" aria-label={`View ${p.name} details`} className="block h-full w-full" onClick={() => { setAddonModal(p); setAddonImage(0); }}>
+                  {photo ? <img src={photo.url} alt={photo.alt || p.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
+                </button>
+                <span className="hb-icon-btn pointer-events-none absolute right-2 top-2" aria-hidden="true"><Maximize2 size={15} /></span>
               </div>
               <div className="flex flex-1 flex-col gap-1.5 p-4">
                 <h3 className="text-sm font-medium">{p.name}</h3>
@@ -792,6 +813,7 @@ export default function Shop() {
                 {p.standalonePrice != null && <p className="hb-muted text-xs">{formatKsh(p.standalonePrice)} separately</p>}
                 {p.inventory != null && p.inventory > 0 && p.inventory <= 5 && <p className="text-xs text-[#C2185B]">Only {p.inventory} left</p>}
                 <div className="mt-auto space-y-2 pt-3">
+                  <button type="button" className="hb-link w-full text-center" onClick={() => { setAddonModal(p); setAddonImage(0); }}>View details</button>
                   {n === 0 ? (
                     <button type="button" className="hb-btn-outline w-full" disabled={p.inventory != null && p.inventory < 1} onClick={() => pick(addonDefinition, p._id)}>{p.inventory != null && p.inventory < 1 ? "Sold out" : "Add to my box"}</button>
                   ) : (
@@ -833,6 +855,7 @@ export default function Shop() {
           <button type="button" className="hb-link" onClick={() => { setMode("box"); setIssues([]); }}>Back to my box</button>
         </div>
       )}
+      {mode === "box" && <BackBar onBack={() => goTo(4)} />}
       <StepHead title="Delivery and gift" hint="Tell us where and when. We will keep you updated along the way." />
       {renderIssues()}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -882,6 +905,10 @@ export default function Shop() {
         </div>
       </div>
       {mode === "cart" && renderPolicyCheck()}
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[#4B0D32]/10 pt-6">
+        <button type="button" className="hb-btn-quiet" onClick={onBack}><ArrowLeft size={16} /> Back</button>
+        <button type="button" className="hb-btn" disabled={submitting} onClick={onPrimary}>{mode === "cart" ? primaryLabel : "Continue to checkout"} {!submitting && <ArrowRight size={16} />}</button>
+      </div>
     </>
   );
 
@@ -891,7 +918,16 @@ export default function Shop() {
     const addonIds = addonDefinition ? picks[addonDefinition.key] || [] : [];
     return (
       <>
+        <BackBar onBack={() => goTo(5)} />
         <StepHead title="Review and pay" hint="One last look. Use Edit to change anything." />
+        <div className="mb-6 flex items-center gap-4 rounded-2xl bg-white p-4 sm:gap-6">
+          <img src={photosOf(box)[0]?.url || cardBox} alt={photosOf(box)[0]?.alt || box?.name || "Your box"} className="h-28 w-28 shrink-0 rounded-xl bg-[#F8E8ED] object-contain sm:h-40 sm:w-40" />
+          <div className="min-w-0">
+            <p className="hb-muted text-xs">Your ritual box</p>
+            <h3 className="font-display text-2xl sm:text-3xl">{box?.name}</h3>
+            <p className="hb-muted mt-1 text-sm">{purchaseType === "three_month" ? "Three month plan" : "One time purchase"}</p>
+          </div>
+        </div>
         {renderIssues()}
         <ReviewRow title="Box and plan" onEdit={() => goTo(1)}>{box?.name}, {purchaseType === "three_month" ? "three month plan" : "one time purchase"}</ReviewRow>
         <ReviewRow title="Your products" onEdit={() => { setWizardStep(3); setActiveCategory(null); }}>
@@ -1046,6 +1082,8 @@ export default function Shop() {
     : wizardStep === 4 && !addonsPicked ? "Skip add ons" : "Continue";
   const footerTotal = mode === "cart" ? selectedCartTotal : total;
   const showAside = mode === "cart" || wizardStep < 6;
+  const deliveryComplete = getIssues({ withSelections: false, withPolicy: false }).length === 0;
+  const showFooter = (mode === "cart" ? wizardStep === 5 : wizardStep >= 5) && deliveryComplete;
   const stepName = mode === "cart" ? "Checkout" : STEPS[wizardStep - 1];
 
   /* ---------- page ---------- */
@@ -1053,7 +1091,7 @@ export default function Shop() {
     <MotionConfig reducedMotion="user">
       <div className="hb">
         <style>{STYLES}</style>
-        <div ref={topRef} className="mx-auto max-w-7xl scroll-mt-4 px-4 pb-44 pt-8 sm:px-6 md:pt-12">
+        <div ref={topRef} className={`mx-auto max-w-7xl scroll-mt-4 px-4 ${showFooter ? "pb-44" : "pb-16"} pt-8 sm:px-6 md:pt-12`}>
           <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="flex items-center gap-2 text-sm font-medium text-[#C2185B]"><Bloom size={22} /> The Heri Bloom ritual</p>
@@ -1081,6 +1119,13 @@ export default function Shop() {
             </div>
           )}
 
+          {showAside && !showFooter && (
+            <button type="button" onClick={() => setSummaryOpen(true)} className="hb-panel mb-4 flex w-full items-center justify-between px-5 py-3 text-left lg:hidden" aria-label="View order summary">
+              <span className="text-sm font-medium">View order summary</span>
+              <span className="font-display text-lg text-[#C2185B]">{formatKsh(footerTotal)}</span>
+            </button>
+          )}
+
           <div className={`grid items-start gap-8 ${showAside ? "lg:grid-cols-[minmax(0,1fr)_380px]" : ""}`}>
             <main className="hb-panel p-6 md:p-10">
               <AnimatePresence mode="wait">
@@ -1093,7 +1138,8 @@ export default function Shop() {
           </div>
         </div>
 
-        {/* One footer, one primary action */}
+        {/* Footer appears only once the delivery details are complete */}
+        {showFooter && (
         <div className="hb-footer" role="region" aria-label="Order navigation">
           <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:px-6">
             <button type="button" className="hb-btn-quiet" onClick={onBack} disabled={mode === "box" && wizardStep === 1 && !activeCategory}><ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span></button>
@@ -1104,6 +1150,8 @@ export default function Shop() {
             <button type="button" className="hb-btn" onClick={onPrimary} disabled={submitting || (mode === "box" && wizardStep === 1 && !boxId)}>{primaryLabel} {!submitting && <ArrowRight size={16} />}</button>
           </div>
         </div>
+
+        )}
 
         {/* Mobile summary sheet */}
         <Modal open={summaryOpen} onClose={() => setSummaryOpen(false)} label="Order summary" variant="sheet">
@@ -1130,7 +1178,60 @@ export default function Shop() {
                 <p className="hb-muted mt-2 text-sm">{boxModal.tagline}</p>
                 <p className="mt-4 text-sm leading-6">{boxModal.description || "A thoughtful care box with carefully chosen essentials for your routine."}</p>
                 <p className="mt-5 font-semibold text-[#C2185B]">{formatKsh(boxModal.price)} <span className="hb-muted font-normal">per box</span></p>
-                <button type="button" className="hb-btn mt-5 w-full" onClick={() => { setBoxId(boxModal._id); setBoxModal(null); goTo(2); }}>Choose this box <ArrowRight size={16} /></button>
+                <button type="button" className="hb-btn mt-5 w-full" onClick={() => { if (boxModal._id !== boxId) setPicks({}); setBoxId(boxModal._id); setBoxModal(null); goTo(2); }}>Choose this box <ArrowRight size={16} /></button>
+              </div>
+            );
+          })()}
+        </Modal>
+
+        {/* Add on details */}
+        <Modal open={Boolean(addonModal)} onClose={() => setAddonModal(null)} label={`${addonModal?.name || "Add on"} details`}>
+          {addonModal && addonDefinition && (() => {
+            const p = addonModal;
+            const photos = photosOf(p);
+            const shown = photos[addonImage] || photos[0];
+            const n = countOf(addonDefinition, p._id);
+            const soldOut = p.inventory != null && p.inventory < 1;
+            const atLimit = p.inventory != null && n >= p.inventory;
+            return (
+              <div className="p-6 pt-16">
+                {shown ? (
+                  <button type="button" className="relative block w-full overflow-hidden rounded-2xl bg-white" onClick={() => setLightbox(shown)} aria-label="View image larger">
+                    <img src={shown.url} alt={shown.alt || p.name} className="h-72 w-full object-contain sm:h-[24rem]" />
+                    <span className="absolute bottom-3 right-3 rounded-full bg-[#4B0D32]/70 px-3 py-1 text-xs text-[#FBF7F2]">Tap to enlarge</span>
+                  </button>
+                ) : (
+                  <div className="flex h-72 items-center justify-center rounded-2xl bg-white text-[#C2185B]/50"><Bloom size={64} /></div>
+                )}
+                {photos.length > 1 && (
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {photos.map((ph, i) => (
+                      <button type="button" key={`${ph.url}-${i}`} onClick={() => setAddonImage(i)} aria-label={`Show photo ${i + 1}`} className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white ${i === addonImage ? "border-[#C2185B]" : "border-[#4B0D32]/10"}`}>
+                        <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-contain" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <h2 className="font-display mt-6 text-3xl">{p.name}</h2>
+                <p className="mt-3 text-sm leading-6">{p.description || "A thoughtful extra for your ritual box, or a useful item to buy on its own."}</p>
+                <div className="mt-4 space-y-1">
+                  <p className="font-semibold text-[#C2185B]">{formatKsh(p.priceModifier)} <span className="hb-muted font-normal">added to your box</span></p>
+                  {p.standalonePrice != null && <p className="hb-muted text-sm">{formatKsh(p.standalonePrice)} if bought separately</p>}
+                  <p className="hb-muted text-sm">{p.inventory == null ? "In stock" : p.inventory > 0 ? `${p.inventory} available` : "Sold out"}</p>
+                </div>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  {n === 0 ? (
+                    <button type="button" className="hb-btn" disabled={soldOut} onClick={() => pick(addonDefinition, p._id)}>{soldOut ? "Sold out" : "Add to my box"} {!soldOut && <Plus size={16} />}</button>
+                  ) : (
+                    <div className="flex items-center justify-center gap-4 rounded-full border border-[#C2185B]/30 bg-[#F8E8ED] px-4 py-1">
+                      <button type="button" className="hb-qbtn" onClick={() => unpick(addonDefinition, p._id)} aria-label={`Remove one ${p.name}`}><Minus size={16} /></button>
+                      <span className="text-sm font-semibold" aria-live="polite">{n} in your box</span>
+                      <button type="button" className="hb-qbtn" disabled={atLimit} onClick={() => pick(addonDefinition, p._id)} aria-label={`Add one more ${p.name}`}><Plus size={16} /></button>
+                    </div>
+                  )}
+                  {p.standalonePrice != null && <button type="button" className="hb-btn-outline" disabled={soldOut} onClick={() => { addStandaloneToCart(p, 1); setAddonModal(null); }}>Buy separately</button>}
+                </div>
+                <button type="button" className="hb-btn-quiet mt-3 w-full" onClick={() => setAddonModal(null)}>Keep browsing</button>
               </div>
             );
           })()}
