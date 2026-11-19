@@ -408,7 +408,7 @@ function PostCard({ post, user, onLogin }) {
 function ReminderCard() {
   return (
     <div className="relative overflow-hidden rounded-[24px] border
-      border-[#EAD9DE] bg-[#FFFDFA] p-6 sm:p-7">
+      border-[#EAD9DE]/70 bg-[#F3D5E0] p-6 sm:p-7">
       <div
         className="pointer-events-none absolute -right-8 -top-8
           h-28 w-28 rounded-full bg-[#F8E8ED]/70"
@@ -572,12 +572,13 @@ export default function Community() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#FBF7F2]
-      text-[#34203A]">
+    <div className="min-h-screen overflow-x-hidden bg-[#F3D5E0]
+      px-3 pb-8 pt-4 text-[#34203A] sm:px-5 sm:pb-10 sm:pt-5">
 
       {/* Editorial hero */}
-      <section className="relative overflow-hidden border-b
-        border-[#EAD9DE] bg-[#F8E8ED]">
+      <div className="mx-auto w-full max-w-7xl">
+      <section className="relative overflow-hidden px-2 pb-6 pt-3
+        sm:px-5 sm:pb-8 sm:pt-5">
         <div
           className="pointer-events-none absolute -right-24 top-0
             h-72 w-72 rounded-full border border-[#4B0D32]/[0.06]
@@ -591,10 +592,10 @@ export default function Community() {
           aria-hidden="true"
         />
 
-        <div className="relative mx-auto max-w-6xl px-5 py-16
-          sm:px-6 sm:py-24 lg:px-8 lg:py-28">
+        <div className="relative mx-auto max-w-6xl px-3 py-5
+          sm:px-4 sm:py-7 lg:px-6 lg:py-8">
           <div className="max-w-3xl">
-            <div className="mb-6 inline-flex items-center gap-3">
+            <div className="mb-4 inline-flex items-center gap-3">
               <span className="h-px w-8 bg-[#C2185B]/60" />
               <SectionLabel>The Heri Bloom community</SectionLabel>
             </div>
@@ -605,14 +606,14 @@ export default function Community() {
               A softer space to share, ask, and be heard.
             </h1>
 
-            <p className="mt-6 max-w-2xl font-body text-base
-              leading-8 text-[#5E4B5D] sm:mt-8 sm:text-lg">
+            <p className="mt-4 max-w-2xl font-body text-sm
+              leading-7 text-[#5E4B5D] sm:text-base">
               A thoughtful corner for cycle conversations, gentle
               encouragement, and the everyday wisdom we learn from
               one another.
             </p>
 
-            <div className="mt-8 flex items-center gap-3
+            <div className="mt-5 flex items-center gap-3
               text-[#C2185B]" aria-hidden="true">
               <span className="h-px w-10 bg-[#C2185B]/40" />
               <Heart size={13} strokeWidth={1.5} />
@@ -622,7 +623,7 @@ export default function Community() {
             <button
               type="button"
               onClick={openComposer}
-              className="mt-8 inline-flex items-center justify-center
+              className="mt-5 inline-flex items-center justify-center
                 gap-2 rounded-full bg-[#4B0D32] px-6 py-3.5
                 font-body text-sm font-medium text-white
                 shadow-[0_5px_18px_rgba(75,13,50,0.12)]
@@ -636,7 +637,7 @@ export default function Community() {
               Share your thoughts
             </button>
 
-            <p className="mt-3 font-body text-xs text-[#766775]">
+            <p className="mt-2 font-body text-xs text-[#766775]">
               Your experiences matter. Share at your own pace.
             </p>
           </div>
@@ -645,14 +646,14 @@ export default function Community() {
 
       {/* Community content */}
       <main className="mx-auto grid w-full max-w-6xl
-        gap-10 px-5 py-12 sm:px-6 sm:py-16
-        lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12
-        lg:px-8 lg:py-20">
+        items-start gap-6 px-2 py-2 sm:px-5 sm:py-3
+        lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-7">
 
-        <section className="min-w-0">
+        <section className="min-w-0 rounded-[24px] border border-[#EAD9DE]
+          bg-[#FBF7F2] p-4 sm:p-6 lg:p-7">
           {/* Section heading */}
-          <div className="mb-7 flex flex-wrap items-end
-            justify-between gap-4 sm:mb-9">
+          <div className="mb-5 flex flex-wrap items-end
+            justify-between gap-3 sm:mb-6">
             <div>
               <SectionLabel>From the community</SectionLabel>
               <h2 className="mt-3 font-display text-3xl
@@ -945,7 +946,7 @@ export default function Community() {
         </section>
 
         {/* Sidebar */}
-        <aside className="space-y-5 lg:sticky lg:top-8 lg:self-start">
+        <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
           <ReminderCard />
           <JournalCard />
 
@@ -971,7 +972,7 @@ export default function Community() {
       </main>
 
       {/* Footer accent */}
-      <div className="border-t border-[#EAD9DE] bg-[#FFFDFA]">
+      <div className="mt-6 rounded-[20px]] border-t border-[#EAD9DE]/60 bg-[#F3D5E0]">
         <div className="mx-auto flex max-w-6xl items-center
           justify-center gap-3 px-5 py-7 text-center">
           <Heart size={13} className="text-[#C2185B]" />
