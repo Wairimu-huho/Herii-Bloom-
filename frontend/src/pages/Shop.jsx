@@ -686,26 +686,26 @@ export default function Shop() {
   const renderBoxStep = () => (
     <>
       <StepHead title="Choose your box" hint="Tap a box to see its photos and details, then choose the one that feels right." />
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-6 sm:grid-cols-2">
         {boxes.map((b) => {
           const photo = photosOf(b)[0];
           const on = b._id === boxId;
           return (
             <div key={b._id} className="hb-card overflow-hidden" data-selected={on}>
               <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="block w-full text-left">
-                <div className="relative h-56 bg-white">
-                  <img src={photo?.url || cardBox} alt={photo?.alt || b.name} loading="lazy" className="h-full w-full object-contain" />
+                <div className="relative h-64 bg-white sm:h-72 lg:h-80">
+                  <img src={photo?.url || cardBox} alt={photo?.alt || b.name} loading="lazy" className="h-full w-full object-contain p-3" />
                   {b.mostPopular && <span className="hb-ribbon">Most loved</span>}
                 </div>
-                <div className="p-5">
-                  <h3 className="font-display text-2xl">{b.name}</h3>
-                  <p className="hb-muted mt-1.5 text-sm leading-6">{b.tagline}</p>
-                  <p className="mt-4 text-lg font-semibold text-[#C2185B]">{formatKsh(b.price)} <span className="hb-muted text-sm font-normal">per box</span></p>
-                  {on && reviewSummary.count > 0 && <p className="hb-muted mt-1 text-xs">Rated {reviewSummary.average} out of 5 by {reviewSummary.count} customer{reviewSummary.count === 1 ? "" : "s"}</p>}
+                <div className="p-6">
+                  <h3 className="font-display text-2xl sm:text-3xl">{b.name}</h3>
+                  <p className="hb-muted mt-2 text-sm leading-6">{b.tagline}</p>
+                  <p className="mt-5 text-xl font-semibold text-[#C2185B]">{formatKsh(b.price)} <span className="hb-muted text-sm font-normal">per box</span></p>
+                  {on && reviewSummary.count > 0 && <p className="hb-muted mt-2 text-xs">Rated {reviewSummary.average} out of 5 by {reviewSummary.count} customer{reviewSummary.count === 1 ? "" : "s"}</p>}
                 </div>
               </button>
-              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="flex w-full items-center justify-between px-5 pb-5 text-left">
-                <span className="text-xs font-medium text-[#C2185B]">View photos and details</span>
+              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="flex min-h-14 w-full items-center justify-between px-6 pb-5 text-left">
+                <span className="text-sm font-medium text-[#C2185B]">View photos and details</span>
                 {on && <span className="flex items-center gap-1 text-xs font-medium text-[#C2185B]"><Check size={14} /> Current choice</span>}
               </button>
             </div>
