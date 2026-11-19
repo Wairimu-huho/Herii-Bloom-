@@ -50,7 +50,7 @@ export default function About() {
   ];
 
   return (
-    <div className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#fdf7f8] text-ink">
+    <div className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#F3D5E0] text-ink">
       <section className="bg-blush-deep overflow-hidden">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 md:py-28 grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center">
           <div className="relative z-10">
