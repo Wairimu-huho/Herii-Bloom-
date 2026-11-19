@@ -170,7 +170,7 @@ function Modal({ open, onClose, label, variant = "center", children }) {
     <div className={`fixed inset-0 z-[70] flex ${wrap}`}>
       <div className="absolute inset-0 bg-[#4B0D32]/50 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
       <div ref={ref} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1} className={`relative outline-none ${variant === "lightbox" ? "" : "hb-sheet"} ${panel}`}>
-        <button type="button" className="hb-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
+        {variant !== "right" && <button type="button" className="hb-close" onClick={onClose} aria-label="Close"><X size={20} /></button>}
         {children}
       </div>
     </div>
@@ -758,7 +758,10 @@ export default function Shop() {
             ))}
           </div>
           {!list.length && <p className="hb-muted text-sm">Nothing is available in this category right now.</p>}
-          <button type="button" className="hb-btn mt-6" onClick={() => finishCategory(activeDefinition)}>Done with {labelOf(activeDefinition)}</button>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button type="button" className="hb-btn-quiet" onClick={() => finishCategory(activeDefinition)}>Done with {labelOf(activeDefinition)}</button>
+          {complete && <button type="button" className="hb-btn" onClick={() => goTo(4)}>Proceed to add ons <ArrowRight size={16} /></button>}
+        </div>
         </>
       );
     }
@@ -981,7 +984,7 @@ export default function Shop() {
           <div><p className="text-sm font-semibold">Pay securely with Paystack</p><p className="hb-muted mt-0.5 text-xs leading-5">Card, M Pesa or bank transfer. You will be taken to Paystack to complete your payment.</p></div>
         </div>
         <p className="mt-4 flex items-center gap-2 text-sm text-[#C2185B]"><Heart size={15} fill="currentColor" /> {IMPACT_LINE}</p>
-        <button type="button" className="hb-btn-outline mt-5" disabled={!box || !complete} onClick={addBoxToCart}>Add this box to my cart <ShoppingBag size={16} /></button>
+        <button type="button" className="hb-btn mt-5 min-h-[58px] w-full px-6 text-base font-semibold shadow-lg shadow-[#4B0D32]/20 sm:w-auto sm:min-w-[280px]" disabled={!box || !complete} onClick={addBoxToCart}>Add this box to my cart <ShoppingBag size={18} /></button>
 
         <section className="mt-10 border-t border-[#4B0D32]/10 pt-6">
           <div className="flex items-baseline justify-between gap-3">
@@ -1263,7 +1266,10 @@ export default function Shop() {
 
         {/* Cart */}
         <Modal open={cartOpen} onClose={() => setCartOpen(false)} label="Shopping cart" variant="right">
-          <div className="border-b border-[#4B0D32]/10 px-6 py-5 pr-20"><h2 className="font-display text-2xl">Your cart</h2></div>
+          <div className="flex items-center justify-between border-b border-[#4B0D32]/10 px-6 py-5">
+            <h2 className="font-display text-2xl">Your cart</h2>
+            <button type="button" onClick={() => setCartOpen(false)} className="flex h-11 w-11 items-center justify-center rounded-full border border-[#4B0D32]/15 bg-white text-[#4B0D32] transition hover:border-[#C2185B] hover:text-[#C2185B]" aria-label="Close cart"><X size={20} /></button>
+          </div>
           <div className="flex-1 overflow-y-auto p-6">
             {cart.length ? (
               <ul className="space-y-3">
