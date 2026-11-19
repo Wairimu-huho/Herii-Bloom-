@@ -642,13 +642,13 @@ export default function Home() {
 
         <section
           id="ritual-boxes"
-          className="hb-home-section bg-[#FBF7F2] px-5 py-20 md:px-8 md:py-28"
+          className="hb-home-section bg-[#FBF7F2] px-0 py-20 md:py-28"
         >
 
-          <div className="mx-auto max-w-7xl">
+          <div className="w-full">
 
             {/* SECTION HEADING */}
-            <Reveal className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <Reveal className="flex flex-col justify-between gap-6 px-5 md:flex-row md:items-end md:px-8">
 
               <div className="max-w-2xl">
 
@@ -732,7 +732,7 @@ export default function Home() {
 
             {/* DYNAMIC PRODUCT CARDS */}
             {!loading && boxes.length > 0 && (
-              <div className="mt-14 grid items-stretch gap-7 md:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-14 grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-stretch gap-6 px-0">
                 {boxes.map((box, index) => (
                   <BoxCard
                     key={box._id}
