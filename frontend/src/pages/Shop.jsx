@@ -370,7 +370,17 @@ export default function Shop() {
       updateDrawerQuantity(1);
       return;
     }
-    handleChoiceSelection(productDrawer.definition.key);
+    const { definition } = productDrawer;
+    const categoryName = String(definition.key || definition.name || "").toLowerCase().replace(/[^a-z]/g, "");
+    const isTeaCategory = categoryName === "tea" || categoryName === "teas";
+    const selectedCount = (picks[definition.key] || []).length;
+    if (isTeaCategory && selectedCount < 5) {
+      const currentIndex = progressItems.findIndex((item) => item.key === definition.key);
+      if (currentIndex >= 0) setActiveStepIndex(currentIndex);
+      setProductDrawer(null);
+      return;
+    }
+    handleChoiceSelection(definition.key);
     setProductDrawer(null);
   };
   const cartCount = cart.reduce((sum, item) => sum + Number(item.quantity || 1), 0);
