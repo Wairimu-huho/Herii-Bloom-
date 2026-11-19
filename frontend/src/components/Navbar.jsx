@@ -36,7 +36,7 @@ export default function Navbar() {
     }`;
 
   return (
-    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent shadow-none" : "sticky top-0 z-[100] bg-gradient-to-r from-[#F8E8ED] via-[#FFF4F7] to-[#F2CDDB] shadow-[0_8px_24px_-18px_rgba(75,13,50,0.25)]"} w-full px-3 py-3 sm:px-6`}>
+    <header className={`${isHome ? "absolute inset-x-0 top-0 z-[100] bg-transparent shadow-none" : "sticky top-0 z-[100] bg-[#F3D5E0] shadow-none"} w-full px-3 py-3 sm:px-6`}>
       <div className="mx-auto w-full max-w-[1440px]">
 
         {/* MAIN NAVBAR */}
