@@ -970,6 +970,7 @@ export default function Community() {
           </div>
         </aside>
       </main>
+      </div>
 
       {/* Footer accent */}
       <div className="mt-6 rounded-[20px] border-t border-[#EAD9DE]/60 bg-[#F3D5E0]">
