@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
@@ -49,9 +50,9 @@ export default function Navbar() {
               onClick={() => setOpen((value) => !value)}
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm transition lg:hidden ${isHome ? "border-[#4B0D32]/30 bg-[#FBF7F2]/85 text-[#4B0D32] hover:bg-[#FBF7F2]" : "border-[#4B0D32]/15 bg-[#4B0D32] text-[#FBF7F2] hover:bg-[#6B1747]"}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm transition lg:hidden ${isHome ? "border-[#4B0D32]/25 bg-white/15 text-[#4B0D32] hover:bg-white/35" : "border-[#4B0D32]/15 bg-[#4B0D32] text-[#FBF7F2] hover:bg-[#6B1747]"}`}
             >
-              {open ? <X size={17} strokeWidth={2.25} /> : <Menu size={17} strokeWidth={2.25} />}
+              {open ? <X size={17} /> : <Menu size={17} />}
             </button>
 
             <Link

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -160,59 +161,6 @@ function Eyebrow({ children, light = false }) {
 // PRODUCT CARD
 // --------------------------------------------------
 
-function SwipeRail({ className = "", label, children }) {
-  const ref = useRef(null);
-  const [active, setActive] = useState(0);
-  const count = Array.isArray(children) ? children.length : 1;
-  const dots = Math.min(count, 7);
-
-  const onScroll = () => {
-    const el = ref.current;
-    if (!el || dots < 2) return;
-    const max = el.scrollWidth - el.clientWidth;
-    const next = max > 0 ? Math.round((el.scrollLeft / max) * (dots - 1)) : 0;
-    setActive((prev) => (prev === next ? prev : next));
-  };
-
-  const scrollToDot = (index) => {
-    const el = ref.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    el.scrollTo({ left: (max * index) / (dots - 1), behavior: "smooth" });
-  };
-
-  return (
-    <>
-      <div
-        ref={ref}
-        onScroll={onScroll}
-        className={`hb-home-swipe ${className}`}
-        role="group"
-        aria-label={label}
-      >
-        {children}
-      </div>
-
-      {dots > 1 && (
-        <div className="hb-home-dots" role="group" aria-label={`${label} position`}>
-          {Array.from({ length: dots }, (_, index) => (
-            <button
-              type="button"
-              key={index}
-              className="hb-home-dot"
-              aria-label={`Go to position ${index + 1} of ${dots}`}
-              aria-current={index === active}
-              onClick={() => scrollToDot(index)}
-            >
-              <span />
-            </button>
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
-
 function BoxCard({ box, index }) {
   const highlights = getBoxHighlights(box);
 
@@ -366,70 +314,6 @@ export default function Home() {
           scroll-margin-top: 90px;
         }
 
-        .hb-home-dots {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: .125rem;
-          margin-top: .25rem;
-        }
-
-        .hb-home-dot {
-          display: flex;
-          height: 24px;
-          width: 24px;
-          align-items: center;
-          justify-content: center;
-          background: none;
-          border: 0;
-          padding: 0;
-          cursor: pointer;
-        }
-
-        .hb-home-dot span {
-          display: block;
-          height: 8px;
-          width: 8px;
-          border-radius: 999px;
-          background: rgba(75,13,50,.28);
-          transition: width .25s, background .25s;
-        }
-
-        .hb-home-dot[aria-current="true"] span {
-          width: 22px;
-          background: #C2185B;
-        }
-
-        @media (max-width: 639px) {
-          .hb-home-swipe {
-            display: flex;
-            gap: .875rem;
-            overflow-x: auto;
-            overscroll-behavior-x: contain;
-            scroll-snap-type: x mandatory;
-            scroll-padding-inline: .25rem;
-            padding: .25rem .25rem .75rem;
-            margin-inline: -.25rem;
-            scrollbar-width: none;
-          }
-
-          .hb-home-swipe::-webkit-scrollbar {
-            display: none;
-          }
-
-          .hb-home-swipe > * {
-            flex: 0 0 80%;
-            min-width: 0;
-            scroll-snap-align: start;
-          }
-        }
-
-        @media (min-width: 640px) {
-          .hb-home-dots {
-            display: none;
-          }
-        }
-
         @media (prefers-reduced-motion: reduce) {
           .hb-home-motion {
             transition: none !important;
@@ -443,7 +327,7 @@ export default function Home() {
             1. HERO SECTION
         ========================================== */}
 
-        <section className="relative min-h-[720px] overflow-hidden bg-[#4B0D32] md:min-h-screen md:bg-[#DDBFC5]">
+        <section className="relative min-h-[720px] overflow-hidden bg-[#DDBFC5] md:min-h-screen">
 
           {/* HERO IMAGE */}
           <motion.img
@@ -452,14 +336,11 @@ export default function Home() {
             initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="absolute inset-x-0 top-0 h-auto w-full max-md:[-webkit-mask-image:linear-gradient(to_bottom,#000_55%,transparent_100%)] max-md:[mask-image:linear-gradient(to_bottom,#000_55%,transparent_100%)] md:inset-0 md:h-full md:object-cover md:object-[62%_center]"
+            className="absolute inset-0 h-full w-full object-cover object-[62%_center]"
           />
 
           {/* IMAGE OVERLAY */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#4B0D32]/75 via-[#4B0D32]/35 to-transparent max-md:hidden md:via-[#4B0D32]/15" />
-
-          {/* PHONE ONLY: lets the whole box show, then fades into plum so the words stay readable */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_10%,rgba(75,13,50,.7)_20%,rgba(75,13,50,.9)_30%,#4B0D32_45%)] md:hidden" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#4B0D32]/75 via-[#4B0D32]/35 to-transparent md:via-[#4B0D32]/15" />
 
           <div className="absolute inset-0 bg-gradient-to-t from-[#4B0D32]/35 via-transparent to-[#4B0D32]/10" />
 
@@ -663,7 +544,97 @@ export default function Home() {
 
 
         {/* ==========================================
-            4. PRODUCT COLLECTION
+            4. BRAND VALUES
+        ========================================== */}
+
+        <section className="bg-[#F8E8ED] px-5 py-20 md:px-8 md:py-24">
+
+          <div className="mx-auto max-w-7xl">
+
+            <Reveal className="mb-12 max-w-xl">
+
+              <Eyebrow>
+                The Heri Bloom difference
+              </Eyebrow>
+
+              <h2 className="font-display text-4xl font-bold leading-tight tracking-[-.04em] md:text-5xl">
+                Care that goes beyond the essentials.
+              </h2>
+
+            </Reveal>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+              <Reveal>
+                <div className="h-full rounded-[24px] bg-[#FBF7F2] p-7 md:p-9">
+
+                  <Leaf
+                    size={27}
+                    strokeWidth={1.4}
+                    className="text-[#C2185B]"
+                  />
+
+                  <h3 className="mt-8 font-display text-2xl font-bold text-[#4B0D32]">
+                    Comfort first
+                  </h3>
+
+                  <p className="mt-3 font-body text-sm leading-7 text-[#4B0D32]/65">
+                    Thoughtful essentials chosen to help you feel
+                    prepared, comfortable and at ease.
+                  </p>
+
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.08}>
+                <div className="h-full rounded-[24px] bg-[#4B0D32] p-7 text-[#FBF7F2] md:p-9">
+
+                  <Heart
+                    size={27}
+                    strokeWidth={1.4}
+                    className="text-[#F6B6C8]"
+                  />
+
+                  <h3 className="mt-8 font-display text-2xl font-bold">
+                    Care with dignity
+                  </h3>
+
+                  <p className="mt-3 font-body text-sm leading-7 text-[#FBF7F2]/70">
+                    A period-care experience that treats your needs
+                    as important, never as an afterthought.
+                  </p>
+
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.16}>
+                <div className="h-full rounded-[24px] bg-[#FBF7F2] p-7 md:p-9 sm:col-span-2 lg:col-span-1">
+
+                  <Sparkles
+                    size={27}
+                    strokeWidth={1.4}
+                    className="text-[#C2185B]"
+                  />
+
+                  <h3 className="mt-8 font-display text-2xl font-bold text-[#4B0D32]">
+                    Small joys
+                  </h3>
+
+                  <p className="mt-3 font-body text-sm leading-7 text-[#4B0D32]/65">
+                    Comforting extras that turn an everyday routine
+                    into a gentler, more beautiful ritual.
+                  </p>
+
+                </div>
+              </Reveal>
+
+            </div>
+          </div>
+        </section>
+
+
+        {/* ==========================================
+            5. PRODUCT COLLECTION
         ========================================== */}
 
         <section
@@ -758,10 +729,7 @@ export default function Home() {
 
             {/* DYNAMIC PRODUCT CARDS */}
             {!loading && boxes.length > 0 && (
-              <SwipeRail
-                label="Ritual boxes"
-                className="mt-14 grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-stretch gap-6"
-              >
+              <div className="mt-14 grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-stretch gap-6">
                 {boxes.map((box, index) => (
                   <BoxCard
                     key={box._id}
@@ -769,99 +737,9 @@ export default function Home() {
                     index={index}
                   />
                 ))}
-              </SwipeRail>
+              </div>
             )}
 
-          </div>
-        </section>
-
-
-        {/* ==========================================
-            5. BRAND VALUES
-        ========================================== */}
-
-        <section className="bg-[#F3D5E0] px-5 py-20 md:px-8 md:py-24">
-
-          <div className="mx-auto max-w-7xl">
-
-            <Reveal className="mb-12 max-w-xl">
-
-              <Eyebrow>
-                The Heri Bloom difference
-              </Eyebrow>
-
-              <h2 className="font-display text-4xl font-bold leading-tight tracking-[-.04em] md:text-5xl">
-                Care that goes beyond the essentials.
-              </h2>
-
-            </Reveal>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-              <Reveal>
-                <div className="h-full rounded-[24px] bg-[#FBF7F2] p-7 md:p-9">
-
-                  <Leaf
-                    size={27}
-                    strokeWidth={1.4}
-                    className="text-[#C2185B]"
-                  />
-
-                  <h3 className="mt-8 font-display text-2xl font-bold text-[#4B0D32]">
-                    Comfort first
-                  </h3>
-
-                  <p className="mt-3 font-body text-sm leading-7 text-[#4B0D32]/65">
-                    Thoughtful essentials chosen to help you feel
-                    prepared, comfortable and at ease.
-                  </p>
-
-                </div>
-              </Reveal>
-
-              <Reveal delay={0.08}>
-                <div className="h-full rounded-[24px] bg-[#4B0D32] p-7 text-[#FBF7F2] md:p-9">
-
-                  <Heart
-                    size={27}
-                    strokeWidth={1.4}
-                    className="text-[#F6B6C8]"
-                  />
-
-                  <h3 className="mt-8 font-display text-2xl font-bold">
-                    Care with dignity
-                  </h3>
-
-                  <p className="mt-3 font-body text-sm leading-7 text-[#FBF7F2]/70">
-                    A period-care experience that treats your needs
-                    as important, never as an afterthought.
-                  </p>
-
-                </div>
-              </Reveal>
-
-              <Reveal delay={0.16}>
-                <div className="h-full rounded-[24px] bg-[#FBF7F2] p-7 md:p-9 sm:col-span-2 lg:col-span-1">
-
-                  <Sparkles
-                    size={27}
-                    strokeWidth={1.4}
-                    className="text-[#C2185B]"
-                  />
-
-                  <h3 className="mt-8 font-display text-2xl font-bold text-[#4B0D32]">
-                    Small joys
-                  </h3>
-
-                  <p className="mt-3 font-body text-sm leading-7 text-[#4B0D32]/65">
-                    Comforting extras that turn an everyday routine
-                    into a gentler, more beautiful ritual.
-                  </p>
-
-                </div>
-              </Reveal>
-
-            </div>
           </div>
         </section>
 
