@@ -116,21 +116,16 @@ const STYLES = `
 /* Swipeable product and box cards on phones; balanced grids on larger screens. */
 .hb-box-rail,.hb-product-rail,.hb-addon-rail{display:grid;gap:1rem;min-width:0}
 .hb-box-card,.hb-product-card,.hb-addon-card{min-width:0}
+.hb-product-rail,.hb-addon-rail{grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.hb-card .hb-btn,.hb-card .hb-btn-outline,.hb-card .hb-btn-quiet{padding-inline:.6rem;font-size:.8125rem;min-height:44px}
 @media(max-width:639px){
-  .hb-box-rail,.hb-product-rail,.hb-addon-rail{display:flex;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:1rem;padding:0 .15rem 1rem; margin-right:-.25rem; scrollbar-width:thin}
-  .hb-box-card,.hb-product-card,.hb-addon-card{flex:0 0 88%;scroll-snap-align:start}
-  .hb-box-card>button:first-child{display:flex;min-height:220px}
-  .hb-box-image{width:38%;height:auto!important;min-height:220px;flex-shrink:0}
-  .hb-box-copy{min-width:0;flex:1;padding:1rem}
-  .hb-box-card .hb-box-action{padding:0 1rem 1rem}
-  .hb-product-card,.hb-addon-card{display:flex;flex-direction:row;min-height:168px}
-  .hb-product-card .hb-product-image,.hb-addon-card .hb-addon-image{width:38%;min-height:168px;aspect-ratio:auto;flex-shrink:0}
-  .hb-product-card .hb-product-copy,.hb-addon-card .hb-addon-copy{min-width:0;flex:1;padding:.9rem}
+  .hb-box-rail{display:flex;gap:.875rem;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:.5rem;padding:.25rem .5rem 1rem;margin:0 -.5rem;scrollbar-width:none}
+  .hb-box-rail::-webkit-scrollbar{display:none}
+  .hb-box-card{flex:0 0 84%;scroll-snap-align:start}
+  .hb-card .hb-icon-btn{height:34px;width:34px}
 }
-@media(min-width:640px) and (max-width:1023px){
-  .hb-box-rail,.hb-product-rail,.hb-addon-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media(min-width:1024px){
+@media(min-width:640px){
+  .hb-product-rail,.hb-addon-rail{grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:1rem}
   .hb-box-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (prefers-reduced-motion:reduce){.hb *{animation:none!important;transition:none!important}}
@@ -265,12 +260,12 @@ function ProductCard({ product, count, repeat, onToggle, onAdd, onRemove, onZoom
   return (
     <div className="hb-card hb-product-card flex flex-col overflow-hidden" data-selected={selected}>
       <div className="hb-product-image relative aspect-square bg-white">
-        {photo ? <img src={photo.url} alt={photo.alt || product.name} loading="lazy" className="h-full w-full object-contain p-2" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
+        {photo ? <img src={photo.url} alt={photo.alt || product.name} loading="lazy" className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-[#C2185B]/50"><Bloom size={56} /></div>}
         {photo && <button type="button" className="hb-icon-btn absolute right-2 top-2" aria-label={`View ${product.name} larger`} onClick={() => onZoom(photo)}><Maximize2 size={15} /></button>}
         {selected && <span className="hb-badge absolute left-3 top-3" aria-hidden="true"><Check size={14} /></span>}
       </div>
-      <div className="hb-product-copy flex flex-1 flex-col gap-1.5 p-4">
-        <h3 className="text-sm font-medium">{product.name}</h3>
+      <div className="hb-product-copy flex flex-1 flex-col gap-1 p-3 sm:gap-1.5 sm:p-4">
+        <h3 className="hb-clamp text-sm font-medium leading-snug">{product.name}</h3>
         {product.description && <p className="hb-muted hb-clamp text-xs leading-5">{product.description}</p>}
         <p className="text-xs font-medium text-[#C2185B]">{product.priceModifier > 0 ? `+ ${formatKsh(product.priceModifier)}` : "Included"}</p>
         {low && <p className="text-xs text-[#C2185B]">Only {product.inventory} left</p>}
@@ -716,15 +711,15 @@ export default function Shop() {
           const photo = photosOf(b)[0];
           const on = b._id === boxId;
           return (
-            <div key={b._id} className="hb-card hb-box-card overflow-hidden" data-selected={on}>
-              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="block w-full text-left">
-                <div className="hb-box-image relative h-64 bg-white sm:h-72 lg:h-80">
-                  <img src={photo?.url || cardBox} alt={photo?.alt || b.name} loading="lazy" className="h-full w-full object-contain p-3" />
+            <div key={b._id} className="hb-card hb-box-card flex flex-col overflow-hidden" data-selected={on}>
+              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="block w-full flex-1 text-left">
+                <div className="hb-box-image relative aspect-square bg-white sm:aspect-auto sm:h-72 lg:h-80">
+                  <img src={photo?.url || cardBox} alt={photo?.alt || b.name} loading="lazy" className="h-full w-full object-cover" />
                   {b.mostPopular && <span className="hb-ribbon">Most loved</span>}
                 </div>
-                <div className="p-6">
-                  <h3 className="font-display text-2xl sm:text-3xl">{b.name}</h3>
-                  <p className="hb-muted mt-2 text-sm leading-6">{b.tagline}</p>
+                <div className="hb-box-copy p-4 sm:p-6">
+                  <h3 className="font-display text-xl sm:text-3xl">{b.name}</h3>
+                  <p className="hb-muted hb-clamp mt-1.5 text-sm leading-6">{b.tagline}</p>
                   {boxCategories(b).length > 0 && (
                     <div className="mt-4">
                       <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#C2185B]">What’s inside</p>
@@ -738,7 +733,7 @@ export default function Shop() {
                   {on && reviewSummary.count > 0 && <p className="hb-muted mt-2 text-xs">Rated {reviewSummary.average} out of 5 by {reviewSummary.count} customer{reviewSummary.count === 1 ? "" : "s"}</p>}
                 </div>
               </button>
-              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="hb-box-action flex min-h-14 w-full items-center justify-between px-6 pb-5 text-left">
+              <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="hb-box-action flex min-h-12 w-full items-center justify-between px-4 pb-4 text-left sm:px-6 sm:pb-5">
                 <span className="text-sm font-medium text-[#C2185B]">View photos and details</span>
                 {on && <span className="flex items-center gap-1 text-xs font-medium text-[#C2185B]"><Check size={14} /> Current choice</span>}
               </button>
@@ -805,7 +800,7 @@ export default function Shop() {
       <>
         <BackBar onBack={() => goTo(2)} />
         <StepHead title="Choose your products" hint="Open each category and pick your favourites. Your choices are saved as you go, and you can come back to any category." />
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-3">
           {regularSelectable.map((d) => {
             const ids = picks[d.key] || [];
             const min = Number(d.minSelections || 0);
@@ -814,7 +809,7 @@ export default function Shop() {
             const representative = (byCategory[d.key] || []).find((product) => photosOf(product).length > 0);
             const representativePhoto = representative ? photosOf(representative)[0] : null;
             return (
-              <button type="button" key={d.key} ref={(node) => { if (node) categoryCardRefs.current[d.key] = node; else delete categoryCardRefs.current[d.key]; }} onClick={() => setActiveCategory(d.key)} className="hb-card flex min-h-[92px] items-center gap-4 p-4 text-left" data-selected={done}>
+              <button type="button" key={d.key} ref={(node) => { if (node) categoryCardRefs.current[d.key] = node; else delete categoryCardRefs.current[d.key]; }} onClick={() => setActiveCategory(d.key)} className="hb-card relative flex aspect-square flex-col items-center justify-center gap-2 p-3 text-center sm:aspect-auto sm:min-h-[92px] sm:flex-row sm:justify-start sm:gap-4 sm:p-4 sm:text-left" data-selected={done}>
                 <span className="flex w-14 shrink-0 justify-center -space-x-3">
                   {thumbs.length ? thumbs.map((id) => { const ph = photosOf(byId[id])[0]; return <span key={id} className="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-white">{ph ? <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-cover" /> : null}</span>; }) : representativePhoto ? <span className="h-11 w-11 overflow-hidden rounded-full border-2 border-white bg-white shadow-sm"><img src={representativePhoto.url} alt="" loading="lazy" className="h-full w-full object-cover" /></span> : <Bloom size={34} className="text-[#C2185B]/50" />}
                 </span>
@@ -822,7 +817,7 @@ export default function Shop() {
                   <span className="block text-[15px] font-medium">{labelOf(d)}</span>
                   <span className={`mt-0.5 block text-xs ${ids.length < min ? "text-[#C2185B]" : "hb-muted"}`}>{progressText(d, ids.length)}</span>
                 </span>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#4B0D32]/15 text-[#C2185B]">{done ? <Check size={16} /> : <ArrowRight size={16} />}</span>
+                <span className="absolute right-2 top-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#4B0D32]/15 text-[#C2185B] sm:static sm:h-9 sm:w-9">{done ? <Check size={16} /> : <ArrowRight size={16} />}</span>
               </button>
             );
           })}
@@ -858,14 +853,14 @@ export default function Shop() {
                 </button>
                 <span className="hb-icon-btn pointer-events-none absolute right-2 top-2" aria-hidden="true"><Maximize2 size={15} /></span>
               </div>
-              <div className="hb-addon-copy flex flex-1 flex-col gap-1.5 p-4">
-                <h3 className="text-sm font-medium">{p.name}</h3>
+              <div className="hb-addon-copy flex flex-1 flex-col gap-1 p-3 sm:gap-1.5 sm:p-4">
+                <h3 className="hb-clamp text-sm font-medium leading-snug">{p.name}</h3>
                 {p.description && <p className="hb-muted hb-clamp text-xs leading-5">{p.description}</p>}
                 <p className="text-xs font-medium text-[#C2185B]">{formatKsh(p.priceModifier)} in your box</p>
-                {p.standalonePrice != null && <p className="hb-muted text-xs">{formatKsh(p.standalonePrice)} separately</p>}
+                {p.standalonePrice != null && <p className="hb-muted text-xs max-sm:hidden">{formatKsh(p.standalonePrice)} separately</p>}
                 {p.inventory != null && p.inventory > 0 && p.inventory <= 5 && <p className="text-xs text-[#C2185B]">Only {p.inventory} left</p>}
                 <div className="mt-auto space-y-2 pt-3">
-                  <button type="button" className="hb-link w-full text-center" onClick={() => { setAddonModal(p); setAddonImage(0); }}>View details</button>
+                  <button type="button" className="hb-link w-full text-center max-sm:hidden" onClick={() => { setAddonModal(p); setAddonImage(0); }}>View details</button>
                   {n === 0 ? (
                     <button type="button" className="hb-btn-outline w-full" disabled={p.inventory != null && p.inventory < 1} onClick={() => pick(addonDefinition, p._id)}>{p.inventory != null && p.inventory < 1 ? "Sold out" : "Add to my box"}</button>
                   ) : (
@@ -875,7 +870,7 @@ export default function Shop() {
                       <button type="button" className="hb-qbtn" disabled={atLimit} onClick={() => pick(addonDefinition, p._id)} aria-label={`Add one more ${p.name}`}><Plus size={16} /></button>
                     </div>
                   )}
-                  {p.standalonePrice != null && <button type="button" className="hb-link w-full text-center" onClick={() => addStandaloneToCart(p, 1)}>Buy separately</button>}
+                  {p.standalonePrice != null && <button type="button" className="hb-link w-full text-center max-sm:hidden" onClick={() => addStandaloneToCart(p, 1)}>Buy separately</button>}
                 </div>
               </div>
             </div>
@@ -1193,7 +1188,7 @@ export default function Shop() {
           )}
 
           <div className={`grid items-start gap-8 ${showAside ? "lg:grid-cols-[minmax(0,1fr)_380px]" : ""}`}>
-            <main ref={sectionRef} className="hb-panel scroll-mt-24 p-6 md:p-10">
+            <main ref={sectionRef} className="hb-panel scroll-mt-24 p-4 sm:p-6 md:p-10">
               <AnimatePresence mode="wait">
                 <motion.div key={`${mode}-${wizardStep}-${activeCategory || ""}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                   {renderStep()}
