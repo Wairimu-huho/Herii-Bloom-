@@ -116,16 +116,21 @@ const STYLES = `
 /* Swipeable product and box cards on phones; balanced grids on larger screens. */
 .hb-box-rail,.hb-product-rail,.hb-addon-rail{display:grid;gap:1rem;min-width:0}
 .hb-box-card,.hb-product-card,.hb-addon-card{min-width:0}
-.hb-product-rail,.hb-addon-rail{grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
-.hb-card .hb-btn,.hb-card .hb-btn-outline,.hb-card .hb-btn-quiet{padding-inline:.6rem;font-size:.8125rem;min-height:44px}
+.hb-card .hb-btn,.hb-card .hb-btn-outline,.hb-card .hb-btn-quiet{padding-inline:.75rem;font-size:.8125rem;min-height:44px}
+.hb-dots{display:flex;align-items:center;justify-content:center;gap:.125rem;margin-top:.125rem}
+.hb-dot{display:flex;height:24px;width:24px;align-items:center;justify-content:center;background:none}
+.hb-dot span{display:block;height:8px;width:8px;border-radius:999px;background:rgba(75,13,50,.28);transition:width .25s,background .25s}
+.hb-dot[aria-current="true"] span{width:22px;background:var(--magenta)}
 @media(max-width:639px){
-  .hb-box-rail{display:flex;gap:.875rem;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:.5rem;padding:.25rem .5rem 1rem;margin:0 -.5rem;scrollbar-width:none}
-  .hb-box-rail::-webkit-scrollbar{display:none}
-  .hb-box-card{flex:0 0 84%;scroll-snap-align:start}
+  .hb-swipe{display:flex;gap:.75rem;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scroll-padding-inline:.25rem;padding:.25rem .25rem .5rem;margin:0 -.25rem;scrollbar-width:none}
+  .hb-swipe::-webkit-scrollbar{display:none}
+  .hb-box-card{flex:0 0 74%;scroll-snap-align:start}
+  .hb-product-card,.hb-addon-card{flex:0 0 64%;scroll-snap-align:start}
   .hb-card .hb-icon-btn{height:34px;width:34px}
 }
 @media(min-width:640px){
-  .hb-product-rail,.hb-addon-rail{grid-template-columns:repeat(auto-fill,minmax(11rem,1fr));gap:1rem}
+  .hb-dots{display:none}
+  .hb-product-rail,.hb-addon-rail{grid-template-columns:repeat(auto-fill,minmax(11rem,1fr))}
   .hb-box-rail{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (prefers-reduced-motion:reduce){.hb *{animation:none!important;transition:none!important}}
@@ -218,7 +223,7 @@ function Stepper({ step, maxStep, onGo }) {
 
 const StepHead = ({ title, hint }) => (
   <div className="mb-7">
-    <h2 className="font-display text-2xl md:text-[2rem]">{title}</h2>
+    <h2 className="font-display text-xl sm:text-2xl md:text-[2rem]">{title}</h2>
     {hint && <p className="hb-muted mt-1.5 max-w-xl text-sm leading-6">{hint}</p>}
   </div>
 );
@@ -250,6 +255,38 @@ const ReviewRow = ({ title, onEdit, children }) => (
     <div className="hb-muted mt-1 text-sm leading-6">{children}</div>
   </section>
 );
+
+function SwipeRail({ className = "", label, children }) {
+  const ref = useRef(null);
+  const [active, setActive] = useState(0);
+  const count = React.Children.count(children);
+  const dots = Math.min(count, 7);
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el || dots < 2) return;
+    const max = el.scrollWidth - el.clientWidth;
+    const next = max > 0 ? Math.round((el.scrollLeft / max) * (dots - 1)) : 0;
+    setActive((prev) => (prev === next ? prev : next));
+  };
+  const scrollToDot = (i) => {
+    const el = ref.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    el.scrollTo({ left: (max * i) / (dots - 1), behavior: "smooth" });
+  };
+  return (
+    <>
+      <div ref={ref} onScroll={onScroll} className={`hb-swipe ${className}`} role="group" aria-label={label}>{children}</div>
+      {dots > 1 && (
+        <div className="hb-dots" role="group" aria-label={`${label} position`}>
+          {Array.from({ length: dots }, (_, i) => (
+            <button type="button" key={i} className="hb-dot" aria-label={`Go to position ${i + 1} of ${dots}`} aria-current={i === active} onClick={() => scrollToDot(i)}><span /></button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
 
 function ProductCard({ product, count, repeat, onToggle, onAdd, onRemove, onZoom }) {
   const photo = photosOf(product)[0];
@@ -706,7 +743,7 @@ export default function Shop() {
   const renderBoxStep = () => (
     <>
       <StepHead title="Choose your box" hint="Tap a box to see its photos and details, then choose the one that feels right." />
-      <div className="hb-box-rail">
+      <SwipeRail className="hb-box-rail" label="Boxes">
         {boxes.map((b) => {
           const photo = photosOf(b)[0];
           const on = b._id === boxId;
@@ -719,18 +756,7 @@ export default function Shop() {
                 </div>
                 <div className="hb-box-copy p-4 sm:p-6">
                   <h3 className="font-display text-xl sm:text-3xl">{b.name}</h3>
-                  <p className="hb-muted hb-clamp mt-1.5 text-sm leading-6">{b.tagline}</p>
-                  {boxCategories(b).length > 0 && (
-                    <div className="mt-4">
-                      <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#C2185B]">What’s inside</p>
-                      <p className="hb-muted mt-1 text-xs leading-5">
-                        {boxCategories(b).slice(0, 3).map(labelOf).join(" · ")}
-                        {boxCategories(b).length > 3 ? ` · +${boxCategories(b).length - 3} more` : ""}
-                      </p>
-                    </div>
-                  )}
-                  <p className="mt-5 text-xl font-semibold text-[#C2185B]">{formatKsh(b.price)} <span className="hb-muted text-sm font-normal">per box</span></p>
-                  {on && reviewSummary.count > 0 && <p className="hb-muted mt-2 text-xs">Rated {reviewSummary.average} out of 5 by {reviewSummary.count} customer{reviewSummary.count === 1 ? "" : "s"}</p>}
+                  <p className="mt-2 text-lg font-semibold text-[#C2185B] sm:text-xl">{formatKsh(b.price)} <span className="hb-muted text-sm font-normal">per box</span></p>
                 </div>
               </button>
               <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="hb-box-action flex min-h-12 w-full items-center justify-between px-4 pb-4 text-left sm:px-6 sm:pb-5">
@@ -740,7 +766,7 @@ export default function Shop() {
             </div>
           );
         })}
-      </div>
+      </SwipeRail>
     </>
   );
 
@@ -781,12 +807,12 @@ export default function Shop() {
         <>
           <button type="button" className="hb-link mb-3 -ml-1 inline-flex items-center gap-1" onClick={() => setActiveCategory(null)}><ArrowLeft size={14} /> All categories</button>
           <StepHead title={labelOf(activeDefinition)} hint={`${ruleText(activeDefinition)} ${progressText(activeDefinition, n)}.`} />
-          <div className="hb-product-rail">
+          <SwipeRail className="hb-product-rail" label="Products">
             {list.map((p) => (
               <ProductCard key={p._id} product={p} count={countOf(activeDefinition, p._id)} repeat={isRepeat(activeDefinition)} onZoom={setLightbox}
                 onToggle={() => toggleChoice(activeDefinition, p._id)} onAdd={() => choose(activeDefinition, p._id)} onRemove={() => unpick(activeDefinition, p._id)} />
             ))}
-          </div>
+          </SwipeRail>
           {!list.length && <p className="hb-muted text-sm">Nothing is available in this category right now.</p>}
           <div className="mt-6 flex flex-wrap items-center gap-3">
           <button type="button" className="hb-btn-quiet" onClick={() => finishCategory(activeDefinition)}>Done with {labelOf(activeDefinition)}</button>
@@ -840,7 +866,7 @@ export default function Shop() {
       </BackBar>
       <StepHead title="Add ons" hint="A little extra for your ritual. Tap an add on to see its photos and details. Add it to your box, or buy it separately." />
       {!addonProducts.length && <p className="hb-muted text-sm">No add ons are available right now. You can continue.</p>}
-      <div className="hb-addon-rail">
+      <SwipeRail className="hb-addon-rail" label="Add ons">
         {addonProducts.map((p) => {
           const n = addonDefinition ? countOf(addonDefinition, p._id) : 0;
           const photo = photosOf(p)[0];
@@ -876,7 +902,7 @@ export default function Shop() {
             </div>
           );
         })}
-      </div>
+      </SwipeRail>
     </>
   );
 
@@ -1156,7 +1182,7 @@ export default function Shop() {
           <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="flex items-center gap-2 text-sm font-medium text-[#C2185B]"><Bloom size={22} /> The Heri Bloom ritual</p>
-              <h1 className="font-display mt-2 text-4xl md:text-5xl">Build your ritual box</h1>
+              <h1 className="font-display mt-2 text-3xl sm:text-4xl md:text-5xl">Build your ritual box</h1>
               <p className="hb-muted mt-2 max-w-xl text-sm leading-6">Choose your box, curate every category, and have it delivered with care.</p>
               {!user && <p className="mt-3 text-sm"><Link to="/login" state={{ from: "/shop" }} className="hb-link">Log in</Link> <span className="hb-muted">to save your progress and check out faster.</span></p>}
             </div>
