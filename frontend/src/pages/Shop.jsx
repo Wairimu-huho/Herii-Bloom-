@@ -150,6 +150,7 @@ function Bloom({ size = 44, className = "" }) {
 
 const MODAL = {
   center: ["items-end justify-center sm:items-center sm:p-6", "w-full sm:max-w-2xl max-h-[92vh] max-h-[92dvh] overflow-y-auto rounded-t-[28px] pb-[env(safe-area-inset-bottom,0px)] sm:rounded-[28px] sm:pb-0"],
+  compact: ["items-end justify-center sm:items-center sm:p-6", "w-full sm:max-w-md max-h-[88vh] max-h-[88dvh] overflow-y-auto rounded-t-[28px] pb-[env(safe-area-inset-bottom,0px)] sm:rounded-[28px] sm:pb-0"],
   right: ["justify-end", "flex h-full w-full max-w-md flex-col pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]"],
   sheet: ["items-end justify-center", "w-full max-h-[85vh] max-h-[85dvh] overflow-y-auto rounded-t-[28px] pb-[env(safe-area-inset-bottom,0px)]"],
   lightbox: ["items-center justify-center p-4", "max-w-5xl rounded-2xl"],
@@ -760,7 +761,7 @@ export default function Shop() {
                 </div>
               </button>
               <button type="button" aria-haspopup="dialog" onClick={() => { setBoxModal(b); setBoxModalImage(0); }} className="hb-box-action flex min-h-12 w-full items-center justify-between px-4 pb-4 text-left sm:px-6 sm:pb-5">
-                <span className="text-sm font-medium text-[#C2185B]">View photos and details</span>
+                <span className="text-sm font-medium text-[#C2185B]">See more</span>
                 {on && <span className="flex items-center gap-1 text-xs font-medium text-[#C2185B]"><Check size={14} /> Current choice</span>}
               </button>
             </div>
@@ -994,15 +995,16 @@ export default function Shop() {
         <BackBar onBack={() => goTo(5)} />
         <StepHead title="Review and pay" hint="One last look. Use Edit to change anything." />
         <div className="mb-6 grid gap-4 rounded-2xl bg-white p-4 sm:grid-cols-[minmax(230px,0.95fr)_minmax(0,1.05fr)] sm:items-stretch sm:gap-6 sm:p-5">
-          <div className="flex items-center gap-4 sm:flex-col sm:items-stretch">
-            <div className="flex min-h-[150px] flex-1 items-center justify-center overflow-hidden rounded-2xl bg-[#F8E8ED] p-3 sm:min-h-[320px]">
-              <img src={photosOf(box)[0]?.url || cardBox} alt={photosOf(box)[0]?.alt || box?.name || "Your box"} className="h-36 w-full shrink-0 object-contain sm:h-[290px]" />
+          <div className="min-w-0">
+            <div className="overflow-hidden rounded-2xl bg-[#F8E8ED]">
+              <img src={photosOf(box)[0]?.url || cardBox} alt={photosOf(box)[0]?.alt || box?.name || "Your box"} className="aspect-square w-full object-cover" />
             </div>
-            <div className="min-w-0 sm:pt-1">
-              <p className="hb-muted text-xs">Your ritual box</p>
-              <h3 className="font-display text-2xl sm:text-3xl">{box?.name}</h3>
-              <p className="hb-muted mt-1 text-sm">{purchaseType === "three_month" ? "Three month plan" : "One time purchase"}</p>
-              <button type="button" className="hb-link mt-2" onClick={() => goTo(1)}>Edit box</button>
+            <div className="mt-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="font-display text-lg leading-tight">{box?.name}</h3>
+                <p className="hb-muted mt-0.5 text-xs">{purchaseType === "three_month" ? "Three month plan" : "One time purchase"}</p>
+              </div>
+              <button type="button" className="hb-link shrink-0" onClick={() => goTo(1)}>Edit box</button>
             </div>
           </div>
           <div className="min-w-0 sm:border-l sm:border-[#4B0D32]/10 sm:pl-6">
@@ -1296,7 +1298,7 @@ export default function Shop() {
         </Modal>
 
         {/* Add on details */}
-        <Modal open={Boolean(addonModal)} onClose={() => setAddonModal(null)} label={`${addonModal?.name || "Add on"} details`}>
+        <Modal open={Boolean(addonModal)} onClose={() => setAddonModal(null)} label={`${addonModal?.name || "Add on"} details`} variant="compact">
           {addonModal && addonDefinition && (() => {
             const p = addonModal;
             const photos = photosOf(p);
@@ -1305,32 +1307,32 @@ export default function Shop() {
             const soldOut = p.inventory != null && p.inventory < 1;
             const atLimit = p.inventory != null && n >= p.inventory;
             return (
-              <div className="p-6 pt-16">
+              <div className="p-4 pt-14 sm:p-5 sm:pt-14">
                 {shown ? (
                   <button type="button" className="relative block w-full overflow-hidden rounded-2xl bg-white" onClick={() => setLightbox(shown)} aria-label="View image larger">
-                    <img src={shown.url} alt={shown.alt || p.name} className="h-72 w-full object-contain sm:h-[24rem]" />
+                    <img src={shown.url} alt={shown.alt || p.name} className="h-52 w-full object-contain sm:h-60" />
                     <span className="absolute bottom-3 right-3 rounded-full bg-[#4B0D32]/70 px-3 py-1 text-xs text-[#FBF7F2]">Tap to enlarge</span>
                   </button>
                 ) : (
-                  <div className="flex h-72 items-center justify-center rounded-2xl bg-white text-[#C2185B]/50"><Bloom size={64} /></div>
+                  <div className="flex h-52 items-center justify-center rounded-2xl bg-white text-[#C2185B]/50"><Bloom size={64} /></div>
                 )}
                 {photos.length > 1 && (
-                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                  <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
                     {photos.map((ph, i) => (
-                      <button type="button" key={`${ph.url}-${i}`} onClick={() => setAddonImage(i)} aria-label={`Show photo ${i + 1}`} className={`h-16 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white ${i === addonImage ? "border-[#C2185B]" : "border-[#4B0D32]/10"}`}>
+                      <button type="button" key={`${ph.url}-${i}`} onClick={() => setAddonImage(i)} aria-label={`Show photo ${i + 1}`} className={`h-12 w-14 shrink-0 overflow-hidden rounded-xl border-2 bg-white ${i === addonImage ? "border-[#C2185B]" : "border-[#4B0D32]/10"}`}>
                         <img src={ph.url} alt="" loading="lazy" className="h-full w-full object-contain" />
                       </button>
                     ))}
                   </div>
                 )}
-                <h2 className="font-display mt-6 text-3xl">{p.name}</h2>
-                <p className="mt-3 text-sm leading-6">{p.description || "A thoughtful extra for your ritual box, or a useful item to buy on its own."}</p>
-                <div className="mt-4 space-y-1">
+                <h2 className="font-display mt-4 text-2xl">{p.name}</h2>
+                <p className="mt-2 text-sm leading-6">{p.description || "A thoughtful extra for your ritual box, or a useful item to buy on its own."}</p>
+                <div className="mt-3 space-y-0.5">
                   <p className="font-semibold text-[#C2185B]">{formatKsh(p.priceModifier)} <span className="hb-muted font-normal">added to your box</span></p>
                   {p.standalonePrice != null && <p className="hb-muted text-sm">{formatKsh(p.standalonePrice)} if bought separately</p>}
                   <p className="hb-muted text-sm">{p.inventory == null ? "In stock" : p.inventory > 0 ? `${p.inventory} available` : "Sold out"}</p>
                 </div>
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
                   {n === 0 ? (
                     <button type="button" className="hb-btn" disabled={soldOut} onClick={() => pick(addonDefinition, p._id)}>{soldOut ? "Sold out" : "Add to my box"} {!soldOut && <Plus size={16} />}</button>
                   ) : (
@@ -1342,7 +1344,7 @@ export default function Shop() {
                   )}
                   {p.standalonePrice != null && <button type="button" className="hb-btn-outline" disabled={soldOut} onClick={() => { addStandaloneToCart(p, 1); setAddonModal(null); }}>Buy separately</button>}
                 </div>
-                <button type="button" className="hb-btn-quiet mt-3 w-full" onClick={() => setAddonModal(null)}>Keep browsing</button>
+                <button type="button" className="hb-btn-quiet mt-2 w-full" onClick={() => setAddonModal(null)}>Keep browsing</button>
               </div>
             );
           })()}
